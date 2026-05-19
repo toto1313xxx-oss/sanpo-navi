@@ -596,18 +596,41 @@ function clearRoute() {
 async function fetchOSM(lat, lon, r) {
   const q = `[out:json][timeout:25];
 (
+  // 歴史的なもの
   node["historic"](around:${r},${lat},${lon});
+  // 道端の小さなもの
+  node["man_made"="cross"](around:${r},${lat},${lon});
+  node["man_made"="stele"](around:${r},${lat},${lon});
+  node["man_made"="survey_point"](around:${r},${lat},${lon});
+  // アート系
   node["tourism"="artwork"](around:${r},${lat},${lon});
   node["tourism"="viewpoint"](around:${r},${lat},${lon});
-  node["natural"~"rock|cave_entrance|cliff|spring|volcano"](around:${r},${lat},${lon});
-  node["natural"="tree"]["notable"](around:${r},${lat},${lon});
-  node["man_made"~"shrine|water_tower|chimney|gasometer|lighthouse|mine_shaft|adit"](around:${r},${lat},${lon});
+  // 自然
+  node["natural"~"rock|cave_entrance|cliff|spring|volcano|geyser|sinkhole"](around:${r},${lat},${lon});
+  node["natural"="tree"](around:${r},${lat},${lon});
+  node["natural"="water"](around:${r},${lat},${lon});
+  // 産業遺産
+  node["man_made"~"shrine|water_tower|chimney|gasometer|lighthouse|mine_shaft|adit|kiln|silo|storage_tank|windmill|watermill"](around:${r},${lat},${lon});
+  // 廃線・廃墟
   node["railway"="abandoned"](around:${r},${lat},${lon});
-  node["amenity"~"place_of_worship|public_bath|fountain|drinking_water|telephone"](around:${r},${lat},${lon});
-  node["amenity"="vending_machine"]["vending"!="parking_tickets"](around:${r},${lat},${lon});
-  node["landuse"="cemetery"](around:${r},${lat},${lon});
   node["abandoned"](around:${r},${lat},${lon});
-  way["highway"="steps"](around:${r},${lat},${lon});
+  node["disused"](around:${r},${lat},${lon});
+  node["ruins"](around:${r},${lat},${lon});
+  // 寺社・聖地
+  node["amenity"="place_of_worship"](around:${r},${lat},${lon});
+  // 古い生活施設
+  node["amenity"="public_bath"](around:${r},${lat},${lon});
+  node["amenity"="fountain"](around:${r},${lat},${lon});
+  node["shop"="convenience"]["operator"](around:${r},${lat},${lon});
+  node["shop"="confectionery"](around:${r},${lat},${lon});
+  node["shop"="hardware"](around:${r},${lat},${lon});
+  node["shop"="newsagent"](around:${r},${lat},${lon});
+  node["shop"="tobacco"](around:${r},${lat},${lon});
+  node["craft"](around:${r},${lat},${lon});
+  // 墓地
+  node["landuse"="cemetery"](around:${r},${lat},${lon});
+  // 古地名・小地名
+  node["place"~"locality|hamlet|isolated_dwelling|farm"](around:${r},${lat},${lon});
 );
 out center;`;
 
@@ -623,10 +646,37 @@ out center;`;
           source: 'osm',
           id: 'osm-' + e.id,
         }))
-        .filter(e => e.lat && e.lon);
+        .filter(e => e.lat && e.lon)
+        .filter(e => !isExcluded(e));
     } catch (e) {}
   }
   return [];
+}
+
+// 除外判定（駅・公的機関・商業施設）
+function isExcluded(s) {
+  const t = s.tags || {};
+  // 駅・交通
+  if (t.railway === 'station' || t.railway === 'halt' || t.railway === 'tram_stop') return true;
+  if (t.public_transport) return true;
+  if (t.highway === 'bus_stop') return true;
+  if (t.aeroway) return true;
+  // 公的機関
+  if (t.amenity === 'townhall' || t.amenity === 'courthouse') return true;
+  if (t.amenity === 'police' || t.amenity === 'fire_station') return true;
+  if (t.amenity === 'post_office' || t.amenity === 'post_box') return true;
+  if (t.amenity === 'school' || t.amenity === 'university' || t.amenity === 'college' || t.amenity === 'kindergarten') return true;
+  if (t.amenity === 'library') return true;
+  if (t.amenity === 'hospital' || t.amenity === 'clinic' || t.amenity === 'dentist' || t.amenity === 'pharmacy' || t.amenity === 'doctors') return true;
+  if (t.amenity === 'bank' || t.amenity === 'atm') return true;
+  if (t.amenity === 'parking' || t.amenity === 'fuel' || t.amenity === 'charging_station') return true;
+  if (t.office) return true;
+  // チェーン店・商業色強いもの
+  if (t.shop && (t.brand || t.operator?.match(/セブン|ローソン|ファミリーマート|ミニストップ|デイリーヤマザキ/))) {
+    // チェーンのコンビニは除外、個人経営はOK
+    if (t.shop === 'convenience') return true;
+  }
+  return false;
 }
 
 // Wikipedia GeoSearch
@@ -710,7 +760,7 @@ async function fetchGSI(lat, lon, r) {
   } catch (e) { return []; }
 }
 
-// しょぼいもの判定
+// しょぼいもの判定（本当にしょぼいもののみ）
 function isShoboi(s) {
   const t = s.tags || {};
   if (t.amenity === 'vending_machine') return true;
@@ -719,31 +769,65 @@ function isShoboi(s) {
   if (t.amenity === 'bench') return true;
   if (t.amenity === 'drinking_water') return true;
   if (t.highway === 'steps') return true;
-  if (s.tags?.bridge === 'yes' && !s.tags?.name) return true;
   return false;
 }
 
-// 感動枠判定
+// 感動枠判定（拡張：見落としがちなものも含む）
 function isEmotional(s) {
   if (s.emotional || s.narrative) return true;
   const t = s.tags || {};
+  // 歴史
   if (t.historic === 'ruins') return true;
   if (t.historic === 'archaeological_site') return true;
   if (t.historic === 'tomb') return true;
   if (t.historic === 'castle') return true;
   if (t.historic === 'wayside_shrine') return true;
-  if (t.historic === 'memorial' && t.subject) return true;
+  if (t.historic === 'memorial') return true;
+  if (t.historic === 'monument') return true;
+  if (t.historic === 'well') return true;
+  if (t.historic === 'boundary_stone') return true;
+  if (t.historic === 'milestone') return true;
+  if (t.historic === 'stone') return true;
+  // 道端の小さなもの
+  if (t.man_made === 'cross') return true;
+  if (t.man_made === 'stele') return true;
+  if (t.man_made === 'survey_point') return true;
+  // 自然
   if (t.natural === 'cave_entrance') return true;
   if (t.natural === 'spring') return true;
   if (t.natural === 'cliff') return true;
   if (t.natural === 'volcano') return true;
-  if (t.natural === 'tree' && t.notable) return true;
+  if (t.natural === 'geyser') return true;
+  if (t.natural === 'sinkhole') return true;
+  if (t.natural === 'tree') return true;
+  if (t.natural === 'rock') return true;
+  // アート・絶景
   if (t.tourism === 'viewpoint') return true;
   if (t.tourism === 'artwork') return true;
+  // 産業遺産
   if (t.man_made === 'lighthouse') return true;
   if (t.man_made === 'mine_shaft' || t.man_made === 'adit') return true;
+  if (t.man_made === 'kiln') return true;
+  if (t.man_made === 'windmill' || t.man_made === 'watermill') return true;
+  if (t.man_made === 'water_tower') return true;
+  if (t.man_made === 'chimney') return true;
+  if (t.man_made === 'gasometer') return true;
+  // 廃線・廃墟
   if (t.railway === 'abandoned') return true;
   if (t.abandoned) return true;
+  if (t.disused) return true;
+  if (t.ruins) return true;
+  // 生活感・古い商店
+  if (t.amenity === 'public_bath') return true;
+  if (t.shop === 'confectionery') return true; // 駄菓子屋
+  if (t.shop === 'hardware') return true; // 金物屋
+  if (t.shop === 'newsagent') return true;
+  if (t.shop === 'tobacco') return true;
+  if (t.craft) return true; // 職人系
+  if (t.shop === 'convenience' && !t.brand) return true; // 個人経営コンビニ
+  // 古地名
+  if (t.place === 'locality' || t.place === 'hamlet' || t.place === 'isolated_dwelling') return true;
+  // ソース
   if (s.source === 'wikipedia') return true;
   return false;
 }
