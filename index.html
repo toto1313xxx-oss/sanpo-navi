@@ -317,6 +317,27 @@ html, body { height: 100%; overflow: hidden; background: #0a0710; color: #e8d9b8
   <div id="dist-unit">目的地まで</div>
 </div>
 
+<div id="debug-panel" style="
+  display: none;
+  position: absolute; top: 175px; left: 50%; transform: translateX(-50%);
+  z-index: 100;
+  background: rgba(10,7,16,0.92);
+  border: 1px solid rgba(212,175,106,0.4);
+  border-radius: 10px;
+  padding: 10px 14px;
+  backdrop-filter: blur(10px);
+  max-width: 90%;
+  text-align: center;
+  font-size: 11px;
+  color: #d4af6a;
+  letter-spacing: 0.05em;
+  line-height: 1.6;
+">
+  <div style="font-size:9px;color:#8b6f3a;letter-spacing:0.3em;margin-bottom:4px;">[DEBUG]</div>
+  <div id="debug-name" style="color:#f0d49a;font-weight:700;"></div>
+  <div id="debug-meta" style="font-size:10px;color:#8b7355;margin-top:2px;"></div>
+</div>
+
 <div id="bottom">
   <div id="error-msg"></div>
   <button id="go-btn" class="ready">どこか連れてって</button>
@@ -733,6 +754,13 @@ async function go() {
   if (destMarker) map.removeLayer(destMarker);
   destMarker = L.marker([spotLat, spotLon], { icon: destIcon }).addTo(map);
 
+  // デバッグパネル表示
+  const debugName = getLabel(spotTags, spotName, spotSource);
+  const debugCat = getCategory(spotTags, spotSource);
+  document.getElementById('debug-name').textContent = debugName;
+  document.getElementById('debug-meta').textContent = `${debugCat} · ${spotSource}`;
+  document.getElementById('debug-panel').style.display = 'block';
+
   setBtn('loading', '道筋を編む');
   try {
     await drawRoute(loc.lat, loc.lon, spotLat, spotLon);
@@ -762,6 +790,7 @@ function reset() {
   if (destMarker) { map.removeLayer(destMarker); destMarker = null; }
   clearRoute();
   document.getElementById('dist-badge').classList.remove('show');
+  document.getElementById('debug-panel').style.display = 'none';
   arrived = false;
   setBtn('ready', 'どこか連れてって');
 }
@@ -793,4 +822,3 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
 </script>
 </body>
 </html>
-
