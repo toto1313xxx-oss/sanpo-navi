@@ -311,8 +311,9 @@ html, body { height: 100%; overflow: hidden; background: #0a0710; color: #e8d9b8
   <button class="mode-btn" data-mode="bike">🚴</button>
   <button class="mode-btn" data-mode="car">🚗</button>
   <div style="width:1px;background:rgba(139,115,85,0.3);margin:4px 2px;"></div>
-  <button class="mode-btn" id="mania-btn" title="マニアモード">⚡</button>
-  <button class="mode-btn" id="emotion-btn" title="感動モード">✨</button>
+  <button class="mode-btn" id="mania-btn" title="マニア">⚡</button>
+  <button class="mode-btn" id="emotion-btn" title="感動">✨</button>
+  <button class="mode-btn" id="horror-btn" title="恐怖">👻</button>
 </div>
 
 <div id="dist-badge">
@@ -414,6 +415,8 @@ const CATEGORY_LABELS = {
 let mode = 'foot';
 let mania = false;
 let emotion = false;
+let horror = false;
+let recentPicks = []; // 連続防止用
 let userLat, userLon;
 let spotLat, spotLon, spotTags, spotName, spotDesc, spotSource;
 let spots = [], chosen = null;
@@ -606,9 +609,12 @@ async function fetchOSM(lat, lon, r) {
   node["tourism"="artwork"](around:${r},${lat},${lon});
   node["tourism"="viewpoint"](around:${r},${lat},${lon});
   // 自然
-  node["natural"~"rock|cave_entrance|cliff|spring|volcano|geyser|sinkhole"](around:${r},${lat},${lon});
-  node["natural"="tree"](around:${r},${lat},${lon});
-  node["natural"="water"](around:${r},${lat},${lon});
+  node["natural"~"rock|cave_entrance|cliff|spring|volcano|geyser|sinkhole|peak|arch|stone"](around:${r},${lat},${lon});
+  node["waterway"="waterfall"](around:${r},${lat},${lon});
+  node["natural"="tree"]["denotation"~"natural_monument|landmark"](around:${r},${lat},${lon});
+  node["natural"="tree"]["heritage"](around:${r},${lat},${lon});
+  node["natural"="tree"]["name"](around:${r},${lat},${lon});
+  node["natural"="water"]["name"](around:${r},${lat},${lon});
   // 産業遺産
   node["man_made"~"shrine|water_tower|chimney|gasometer|lighthouse|mine_shaft|adit|kiln|silo|storage_tank|windmill|watermill"](around:${r},${lat},${lon});
   // 廃線・廃墟
@@ -799,8 +805,8 @@ function isEmotional(s) {
   if (t.natural === 'volcano') return true;
   if (t.natural === 'geyser') return true;
   if (t.natural === 'sinkhole') return true;
-  if (t.natural === 'tree') return true;
-  if (t.natural === 'rock') return true;
+  if (t.natural === 'tree' && (t.name || t.heritage || t.denotation)) return true;
+  if (t.natural === 'rock' && t.name) return true;
   // アート・絶景
   if (t.tourism === 'viewpoint') return true;
   if (t.tourism === 'artwork') return true;
@@ -832,9 +838,36 @@ function isEmotional(s) {
   return false;
 }
 
+// 恐怖枠判定
+function isHorror(s) {
+  const t = s.tags || {};
+  const name = (s.name || t.name || '').toString();
+  const desc = (s.desc || '').toString();
+  const text = name + ' ' + desc;
+  // キーワード判定
+  if (/血|鬼|呪|死|首|怨|霊|怪|妖|幽|地獄|墓|塚|供養|処刑|刑場|無縁/.test(text)) return true;
+  // OSMタグ
+  if (t.historic === 'tomb') return true;
+  if (t.historic === 'ruins') return true;
+  if (t.landuse === 'cemetery') return true;
+  if (t.abandoned) return true;
+  if (t.ruins) return true;
+  if (t.railway === 'abandoned') return true;
+  if (t.man_made === 'mine_shaft' || t.man_made === 'adit') return true;
+  return false;
+}
+
+// モード別距離（恐怖モードは大幅拡張）
+function getRadius() {
+  if (horror) {
+    return mode === 'foot' ? 5000 : mode === 'bike' ? 15000 : 30000;
+  }
+  return MODE_RADIUS[mode] || 1500;
+}
+
 // 全部取得＆統合
 async function fetchAllSpots(lat, lon) {
-  const r = MODE_RADIUS[mode] || 1500;
+  const r = getRadius();
   const [osm, wp, wd] = await Promise.all([
     fetchOSM(lat, lon, r),
     fetchWikipedia(lat, lon, r),
@@ -844,13 +877,15 @@ async function fetchAllSpots(lat, lon) {
   all = all
     .map(s => ({ ...s, distance: haversine(lat, lon, s.lat, s.lon) }))
     .filter(s => s.distance > 50)
-    .filter(s => !badReports.includes(s.id));
+    .filter(s => !badReports.includes(s.id))
+    .filter(s => !recentPicks.includes(s.id)); // 連続防止
 
-  if (emotion) {
-    // 感動モード：感動枠だけ
+  if (horror) {
+    // 恐怖モード：心霊系のみ
+    all = all.filter(isHorror);
+  } else if (emotion) {
     all = all.filter(isEmotional);
   } else if (mania) {
-    // マニアモード：名前なしや観光地以外
     all = all.filter(s => {
       if (s.source === 'wikipedia') return false;
       if (s.source === 'wikidata' && s.desc && !s.emotional) return false;
@@ -861,24 +896,32 @@ async function fetchAllSpots(lat, lon) {
       return true;
     });
   } else {
-    // 通常モード：しょぼいものは弾く（しょぼ率を抑える、完全削除はしない）
     all = all.filter(s => !isShoboi(s) || Math.random() < 0.05);
   }
 
   return all;
 }
 
-// マイナー優先 & 感動優先の重み付け選択
+// マイナー優先 & 感動優先 & 遠距離優先の重み付け選択
 function weightedPick(spots) {
+  const minRadius = mode === 'foot' ? 200 : mode === 'bike' ? 1000 : 5000;
   const weights = spots.map(s => {
     let w = 1.0;
-    if (isEmotional(s)) w *= 4;          // 感動枠は4倍出やすく
-    if (isShoboi(s)) w *= 0.1;           // しょぼいは1/10に
-    if (!s.tags?.name && !s.name) w *= 1.5; // 名前なしはちょい有利
-    if (s.source === 'wikipedia') w *= 0.5;  // メジャーすぎは半分
+    // 車・チャリは近すぎを減らす
+    if (s.distance < minRadius) w *= 0.2;
+    // 車モードは遠いほど有利
+    if (mode === 'car') w *= Math.min(s.distance / 5000, 3);
+    // チャリも適度に遠めを優先
+    if (mode === 'bike') w *= Math.min(s.distance / 2000, 2);
+
+    if (isHorror(s)) w *= horror ? 5 : 1;
+    if (isEmotional(s)) w *= 4;
+    if (isShoboi(s)) w *= 0.1;
+    if (!s.tags?.name && !s.name) w *= 1.5;
+    if (s.source === 'wikipedia') w *= 0.5;
     if (s.tags?.tourism === 'attraction') w *= 0.3;
     if (s.tags?.historic === 'castle' && s.tags?.name) w *= 0.4;
-    if (s.narrative) w *= 5;             // 文学作品の舞台は5倍
+    if (s.narrative) w *= 5;
     return w;
   });
   const total = weights.reduce((a, b) => a + b, 0);
@@ -952,6 +995,8 @@ async function go() {
 
   spots = elements;
   const pick = weightedPick(spots);
+  recentPicks.push(pick.id);
+  if (recentPicks.length > 5) recentPicks.shift();
   chosen = pick;
   spotLat = pick.lat; spotLon = pick.lon; spotTags = pick.tags;
   spotName = pick.name; spotDesc = pick.desc; spotSource = pick.source;
@@ -1049,21 +1094,27 @@ document.querySelectorAll('.mode-btn[data-mode]').forEach(btn => {
 
 document.getElementById('mania-btn').addEventListener('click', () => {
   mania = !mania;
-  if (mania) {
-    emotion = false;
-    document.getElementById('emotion-btn').classList.remove('active');
-  }
-  document.getElementById('mania-btn').classList.toggle('active', mania);
+  if (mania) { emotion = false; horror = false; }
+  updateModeBtns();
 });
 
 document.getElementById('emotion-btn').addEventListener('click', () => {
   emotion = !emotion;
-  if (emotion) {
-    mania = false;
-    document.getElementById('mania-btn').classList.remove('active');
-  }
-  document.getElementById('emotion-btn').classList.toggle('active', emotion);
+  if (emotion) { mania = false; horror = false; }
+  updateModeBtns();
 });
+
+document.getElementById('horror-btn').addEventListener('click', () => {
+  horror = !horror;
+  if (horror) { mania = false; emotion = false; }
+  updateModeBtns();
+});
+
+function updateModeBtns() {
+  document.getElementById('mania-btn').classList.toggle('active', mania);
+  document.getElementById('emotion-btn').classList.toggle('active', emotion);
+  document.getElementById('horror-btn').classList.toggle('active', horror);
+}
 </script>
 </body>
 </html>
