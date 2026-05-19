@@ -829,18 +829,22 @@ async function go() {
   const wikiLink = document.getElementById('debug-wiki');
   if (spotSource === 'wikipedia' && spotName) {
     wikiLink.href = `https://ja.wikipedia.org/wiki/${encodeURIComponent(spotName)}`;
+    wikiLink.textContent = 'Wikipedia ↗';
     wikiLink.style.display = 'inline-block';
   } else if (spotSource === 'wikidata' && chosen.id) {
     const wdId = chosen.id.replace('wd-http://www.wikidata.org/entity/', '');
     wikiLink.href = `https://www.wikidata.org/wiki/${wdId}`;
-    wikiLink.textContent = 'Wikidataで見る ↗';
+    wikiLink.textContent = 'Wikidata ↗';
     wikiLink.style.display = 'inline-block';
   } else {
-    // OSMの場合は地名でWikipedia検索
     wikiLink.href = `https://ja.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(debugName)}`;
-    wikiLink.textContent = 'Wikipediaで検索 ↗';
+    wikiLink.textContent = 'Wiki検索 ↗';
     wikiLink.style.display = 'inline-block';
   }
+
+  // Googleマップリンク
+  document.getElementById('debug-gmap').href =
+    `https://maps.google.com/?q=${spotLat},${spotLon}`;
 
   document.getElementById('debug-panel').style.display = 'block';
 
