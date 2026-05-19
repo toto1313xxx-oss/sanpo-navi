@@ -310,6 +310,8 @@ html, body { height: 100%; overflow: hidden; background: #0a0710; color: #e8d9b8
   <button class="mode-btn active" data-mode="foot">🚶</button>
   <button class="mode-btn" data-mode="bike">🚴</button>
   <button class="mode-btn" data-mode="car">🚗</button>
+  <div style="width:1px;background:rgba(139,115,85,0.3);margin:4px 2px;"></div>
+  <button class="mode-btn" id="mania-btn" title="マニアモード">⚡</button>
 </div>
 
 <div id="dist-badge">
@@ -398,6 +400,7 @@ const CATEGORY_LABELS = {
 };
 
 let mode = 'foot';
+let mania = false;
 let userLat, userLon;
 let spotLat, spotLon, spotTags, spotName, spotDesc, spotSource;
 let spots = [], chosen = null;
@@ -689,12 +692,51 @@ async function fetchAllSpots(lat, lon) {
     fetchWikipedia(lat, lon, r),
     fetchWikidata(lat, lon, r),
   ]);
-  const all = [...osm, ...wp, ...wd];
-  const filtered = all
+  let all = [...osm, ...wp, ...wd];
+  all = all
     .map(s => ({ ...s, distance: haversine(lat, lon, s.lat, s.lon) }))
     .filter(s => s.distance > 50)
-    .filter(s => !badReports.includes(s.id)); // ハズレ報告除外
-  return filtered;
+    .filter(s => !badReports.includes(s.id));
+
+  if (mania) {
+    // マニアモード：名前なし or マイナーなものだけ
+    all = all.filter(s => {
+      // Wikipediaは弾く（メジャーすぎる）
+      if (s.source === 'wikipedia') return false;
+      // Wikidataは説明文がない（マニアック）なもののみ
+      if (s.source === 'wikidata' && s.desc) return false;
+      // OSMは名前なし優先、あっても観光名所系は弾く
+      if (s.source === 'osm') {
+        if (s.tags?.tourism === 'attraction') return false;
+        if (s.tags?.historic === 'castle' && s.tags?.name) return false;
+      }
+      return true;
+    });
+  }
+
+  return all;
+}
+
+// マイナー優先の重み付け選択
+function weightedPick(spots) {
+  const weights = spots.map(s => {
+    let w = 1.0;
+    // 名前なしは重み増加
+    if (!s.tags?.name && !s.name) w *= 3;
+    // Wikipediaは重み減少
+    if (s.source === 'wikipedia') w *= 0.3;
+    // 観光地系は重み減少
+    if (s.tags?.tourism === 'attraction') w *= 0.2;
+    if (s.tags?.historic === 'castle' && s.tags?.name) w *= 0.3;
+    return w;
+  });
+  const total = weights.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < spots.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return spots[i];
+  }
+  return spots[spots.length - 1];
 }
 
 // ---- 到着演出 ----
@@ -758,7 +800,7 @@ async function go() {
   }
 
   spots = elements;
-  const pick = spots[Math.floor(Math.random() * spots.length)];
+  const pick = weightedPick(spots);
   chosen = pick;
   spotLat = pick.lat; spotLon = pick.lon; spotTags = pick.tags;
   spotName = pick.name; spotDesc = pick.desc; spotSource = pick.source;
@@ -842,12 +884,17 @@ document.getElementById('go-btn').addEventListener('click', () => {
 document.getElementById('reveal-again').addEventListener('click', reset);
 document.getElementById('reveal-bad').addEventListener('click', reportBad);
 
-document.querySelectorAll('.mode-btn').forEach(btn => {
+document.querySelectorAll('.mode-btn[data-mode]').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     mode = btn.dataset.mode;
   });
+});
+
+document.getElementById('mania-btn').addEventListener('click', () => {
+  mania = !mania;
+  document.getElementById('mania-btn').classList.toggle('active', mania);
 });
 </script>
 </body>
