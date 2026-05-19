@@ -642,7 +642,14 @@ out center;`;
 
   for (const server of OVERPASS_SERVERS) {
     try {
-      const res = await fetch(server, { method: 'POST', body: 'data=' + encodeURIComponent(q) });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch(server, {
+        method: 'POST',
+        body: 'data=' + encodeURIComponent(q),
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
       const data = await res.json();
       return (data.elements || [])
         .map(e => ({
@@ -688,8 +695,11 @@ function isExcluded(s) {
 // Wikipedia GeoSearch
 async function fetchWikipedia(lat, lon, r) {
   try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
     const url = `https://ja.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}|${lon}&gsradius=${Math.min(r, 10000)}&gslimit=50&format=json&origin=*`;
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
     const data = await res.json();
     return (data.query?.geosearch || []).map(p => ({
       lat: p.lat, lon: p.lon,
@@ -712,45 +722,41 @@ async function fetchWikipediaExtract(title) {
   } catch (e) { return ''; }
 }
 
-// Wikidata SPARQL（拡張版：文学舞台・ロケ地・伝承地もマーク）
+// Wikidata SPARQL（軽量版）
 async function fetchWikidata(lat, lon, r) {
-  const km = Math.min(r / 1000, 10);
+  const km = Math.min(r / 1000, 5);
   const sparql = `
-SELECT ?item ?itemLabel ?coord ?desc
-  (GROUP_CONCAT(DISTINCT ?typeLabel; separator=", ") AS ?types)
-  (SAMPLE(?narrativeWork) AS ?narrative)
-WHERE {
+SELECT ?item ?itemLabel ?coord ?desc WHERE {
   SERVICE wikibase:around {
     ?item wdt:P625 ?coord .
     bd:serviceParam wikibase:center "Point(${lon} ${lat})"^^geo:wktLiteral .
     bd:serviceParam wikibase:radius "${km}" .
   }
   OPTIONAL { ?item schema:description ?desc . FILTER(LANG(?desc) = "ja") }
-  OPTIONAL { ?item wdt:P31 ?type . ?type rdfs:label ?typeLabel . FILTER(LANG(?typeLabel) = "ja") }
-  OPTIONAL { ?narrativeWork wdt:P840 ?item . }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "ja,en". }
 }
-GROUP BY ?item ?itemLabel ?coord ?desc
-LIMIT 80`;
+LIMIT 40`;
   try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
     const url = 'https://query.wikidata.org/sparql?format=json&query=' + encodeURIComponent(sparql);
-    const res = await fetch(url, { headers: { 'Accept': 'application/sparql-results+json' } });
+    const res = await fetch(url, {
+      headers: { 'Accept': 'application/sparql-results+json' },
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
     const data = await res.json();
     return (data.results?.bindings || []).map(b => {
       const m = b.coord.value.match(/Point\(([-\d.]+) ([-\d.]+)\)/);
       if (!m) return null;
-      const types = b.types?.value || '';
-      const hasNarrative = !!b.narrative?.value;
-      // 感動枠かどうか判定
-      const isEmotional = hasNarrative ||
-        /民話|伝説|妖怪|文学|物語|霊|怪|塚|古墳|信仰|聖地|遺跡/.test(types + ' ' + (b.desc?.value || ''));
+      const desc = b.desc?.value || '';
+      const isEmotional = /民話|伝説|妖怪|文学|物語|霊|怪|塚|古墳|信仰|聖地|遺跡|心霊|怨/.test(desc);
       return {
         lat: parseFloat(m[2]), lon: parseFloat(m[1]),
-        tags: { name: b.itemLabel?.value, types },
+        tags: { name: b.itemLabel?.value },
         source: 'wikidata',
         name: b.itemLabel?.value,
-        desc: b.desc?.value || '',
-        narrative: hasNarrative,
+        desc,
         emotional: isEmotional,
         id: 'wd-' + b.item.value,
       };
