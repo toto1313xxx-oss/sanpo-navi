@@ -336,6 +336,18 @@ html, body { height: 100%; overflow: hidden; background: #0a0710; color: #e8d9b8
   <div style="font-size:9px;color:#8b6f3a;letter-spacing:0.3em;margin-bottom:4px;">[DEBUG]</div>
   <div id="debug-name" style="color:#f0d49a;font-weight:700;"></div>
   <div id="debug-meta" style="font-size:10px;color:#8b7355;margin-top:2px;"></div>
+  <a id="debug-wiki" href="#" target="_blank" rel="noopener" style="
+    display:none;
+    margin-top:8px;
+    padding:4px 12px;
+    background:rgba(212,175,106,0.15);
+    border:1px solid rgba(212,175,106,0.4);
+    border-radius:6px;
+    color:#f0d49a;
+    font-size:10px;
+    text-decoration:none;
+    letter-spacing:0.1em;
+  ">Wikipediaで見る ↗</a>
 </div>
 
 <div id="bottom">
@@ -759,6 +771,24 @@ async function go() {
   const debugCat = getCategory(spotTags, spotSource);
   document.getElementById('debug-name').textContent = debugName;
   document.getElementById('debug-meta').textContent = `${debugCat} · ${spotSource}`;
+
+  // Wikipediaリンク
+  const wikiLink = document.getElementById('debug-wiki');
+  if (spotSource === 'wikipedia' && spotName) {
+    wikiLink.href = `https://ja.wikipedia.org/wiki/${encodeURIComponent(spotName)}`;
+    wikiLink.style.display = 'inline-block';
+  } else if (spotSource === 'wikidata' && chosen.id) {
+    const wdId = chosen.id.replace('wd-http://www.wikidata.org/entity/', '');
+    wikiLink.href = `https://www.wikidata.org/wiki/${wdId}`;
+    wikiLink.textContent = 'Wikidataで見る ↗';
+    wikiLink.style.display = 'inline-block';
+  } else {
+    // OSMの場合は地名でWikipedia検索
+    wikiLink.href = `https://ja.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(debugName)}`;
+    wikiLink.textContent = 'Wikipediaで検索 ↗';
+    wikiLink.style.display = 'inline-block';
+  }
+
   document.getElementById('debug-panel').style.display = 'block';
 
   setBtn('loading', '道筋を編む');
