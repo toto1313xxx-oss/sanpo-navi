@@ -312,6 +312,7 @@ html, body { height: 100%; overflow: hidden; background: #0a0710; color: #e8d9b8
   <button class="mode-btn" data-mode="car">🚗</button>
   <div style="width:1px;background:rgba(139,115,85,0.3);margin:4px 2px;"></div>
   <button class="mode-btn" id="mania-btn" title="マニアモード">⚡</button>
+  <button class="mode-btn" id="emotion-btn" title="感動モード">✨</button>
 </div>
 
 <div id="dist-badge">
@@ -412,6 +413,7 @@ const CATEGORY_LABELS = {
 
 let mode = 'foot';
 let mania = false;
+let emotion = false;
 let userLat, userLon;
 let spotLat, spotLon, spotTags, spotName, spotDesc, spotSource;
 let spots = [], chosen = null;
@@ -654,19 +656,25 @@ async function fetchWikipediaExtract(title) {
   } catch (e) { return ''; }
 }
 
-// Wikidata SPARQL
+// Wikidata SPARQL（拡張版：文学舞台・ロケ地・伝承地もマーク）
 async function fetchWikidata(lat, lon, r) {
   const km = Math.min(r / 1000, 10);
   const sparql = `
-SELECT ?item ?itemLabel ?coord ?desc WHERE {
+SELECT ?item ?itemLabel ?coord ?desc
+  (GROUP_CONCAT(DISTINCT ?typeLabel; separator=", ") AS ?types)
+  (SAMPLE(?narrativeWork) AS ?narrative)
+WHERE {
   SERVICE wikibase:around {
     ?item wdt:P625 ?coord .
     bd:serviceParam wikibase:center "Point(${lon} ${lat})"^^geo:wktLiteral .
     bd:serviceParam wikibase:radius "${km}" .
   }
   OPTIONAL { ?item schema:description ?desc . FILTER(LANG(?desc) = "ja") }
+  OPTIONAL { ?item wdt:P31 ?type . ?type rdfs:label ?typeLabel . FILTER(LANG(?typeLabel) = "ja") }
+  OPTIONAL { ?narrativeWork wdt:P840 ?item . }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "ja,en". }
 }
+GROUP BY ?item ?itemLabel ?coord ?desc
 LIMIT 80`;
   try {
     const url = 'https://query.wikidata.org/sparql?format=json&query=' + encodeURIComponent(sparql);
@@ -675,12 +683,19 @@ LIMIT 80`;
     return (data.results?.bindings || []).map(b => {
       const m = b.coord.value.match(/Point\(([-\d.]+) ([-\d.]+)\)/);
       if (!m) return null;
+      const types = b.types?.value || '';
+      const hasNarrative = !!b.narrative?.value;
+      // 感動枠かどうか判定
+      const isEmotional = hasNarrative ||
+        /民話|伝説|妖怪|文学|物語|霊|怪|塚|古墳|信仰|聖地|遺跡/.test(types + ' ' + (b.desc?.value || ''));
       return {
         lat: parseFloat(m[2]), lon: parseFloat(m[1]),
-        tags: { name: b.itemLabel?.value },
+        tags: { name: b.itemLabel?.value, types },
         source: 'wikidata',
         name: b.itemLabel?.value,
         desc: b.desc?.value || '',
+        narrative: hasNarrative,
+        emotional: isEmotional,
         id: 'wd-' + b.item.value,
       };
     }).filter(Boolean);
@@ -693,6 +708,44 @@ async function fetchGSI(lat, lon, r) {
     // 国土地理院の地名検索（簡易）：Wikipedia/Wikidataで十分カバーされるためスキップしてもよい
     return [];
   } catch (e) { return []; }
+}
+
+// しょぼいもの判定
+function isShoboi(s) {
+  const t = s.tags || {};
+  if (t.amenity === 'vending_machine') return true;
+  if (t.amenity === 'telephone') return true;
+  if (t.amenity === 'toilets') return true;
+  if (t.amenity === 'bench') return true;
+  if (t.amenity === 'drinking_water') return true;
+  if (t.highway === 'steps') return true;
+  if (s.tags?.bridge === 'yes' && !s.tags?.name) return true;
+  return false;
+}
+
+// 感動枠判定
+function isEmotional(s) {
+  if (s.emotional || s.narrative) return true;
+  const t = s.tags || {};
+  if (t.historic === 'ruins') return true;
+  if (t.historic === 'archaeological_site') return true;
+  if (t.historic === 'tomb') return true;
+  if (t.historic === 'castle') return true;
+  if (t.historic === 'wayside_shrine') return true;
+  if (t.historic === 'memorial' && t.subject) return true;
+  if (t.natural === 'cave_entrance') return true;
+  if (t.natural === 'spring') return true;
+  if (t.natural === 'cliff') return true;
+  if (t.natural === 'volcano') return true;
+  if (t.natural === 'tree' && t.notable) return true;
+  if (t.tourism === 'viewpoint') return true;
+  if (t.tourism === 'artwork') return true;
+  if (t.man_made === 'lighthouse') return true;
+  if (t.man_made === 'mine_shaft' || t.man_made === 'adit') return true;
+  if (t.railway === 'abandoned') return true;
+  if (t.abandoned) return true;
+  if (s.source === 'wikipedia') return true;
+  return false;
 }
 
 // 全部取得＆統合
@@ -709,36 +762,39 @@ async function fetchAllSpots(lat, lon) {
     .filter(s => s.distance > 50)
     .filter(s => !badReports.includes(s.id));
 
-  if (mania) {
-    // マニアモード：名前なし or マイナーなものだけ
+  if (emotion) {
+    // 感動モード：感動枠だけ
+    all = all.filter(isEmotional);
+  } else if (mania) {
+    // マニアモード：名前なしや観光地以外
     all = all.filter(s => {
-      // Wikipediaは弾く（メジャーすぎる）
       if (s.source === 'wikipedia') return false;
-      // Wikidataは説明文がない（マニアック）なもののみ
-      if (s.source === 'wikidata' && s.desc) return false;
-      // OSMは名前なし優先、あっても観光名所系は弾く
+      if (s.source === 'wikidata' && s.desc && !s.emotional) return false;
       if (s.source === 'osm') {
         if (s.tags?.tourism === 'attraction') return false;
         if (s.tags?.historic === 'castle' && s.tags?.name) return false;
       }
       return true;
     });
+  } else {
+    // 通常モード：しょぼいものは弾く（しょぼ率を抑える、完全削除はしない）
+    all = all.filter(s => !isShoboi(s) || Math.random() < 0.05);
   }
 
   return all;
 }
 
-// マイナー優先の重み付け選択
+// マイナー優先 & 感動優先の重み付け選択
 function weightedPick(spots) {
   const weights = spots.map(s => {
     let w = 1.0;
-    // 名前なしは重み増加
-    if (!s.tags?.name && !s.name) w *= 3;
-    // Wikipediaは重み減少
-    if (s.source === 'wikipedia') w *= 0.3;
-    // 観光地系は重み減少
-    if (s.tags?.tourism === 'attraction') w *= 0.2;
-    if (s.tags?.historic === 'castle' && s.tags?.name) w *= 0.3;
+    if (isEmotional(s)) w *= 4;          // 感動枠は4倍出やすく
+    if (isShoboi(s)) w *= 0.1;           // しょぼいは1/10に
+    if (!s.tags?.name && !s.name) w *= 1.5; // 名前なしはちょい有利
+    if (s.source === 'wikipedia') w *= 0.5;  // メジャーすぎは半分
+    if (s.tags?.tourism === 'attraction') w *= 0.3;
+    if (s.tags?.historic === 'castle' && s.tags?.name) w *= 0.4;
+    if (s.narrative) w *= 5;             // 文学作品の舞台は5倍
     return w;
   });
   const total = weights.reduce((a, b) => a + b, 0);
@@ -909,7 +965,20 @@ document.querySelectorAll('.mode-btn[data-mode]').forEach(btn => {
 
 document.getElementById('mania-btn').addEventListener('click', () => {
   mania = !mania;
+  if (mania) {
+    emotion = false;
+    document.getElementById('emotion-btn').classList.remove('active');
+  }
   document.getElementById('mania-btn').classList.toggle('active', mania);
+});
+
+document.getElementById('emotion-btn').addEventListener('click', () => {
+  emotion = !emotion;
+  if (emotion) {
+    mania = false;
+    document.getElementById('mania-btn').classList.remove('active');
+  }
+  document.getElementById('emotion-btn').classList.toggle('active', emotion);
 });
 </script>
 </body>
