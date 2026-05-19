@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>散歩ナビ</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; background: #0c0c0c; font-family: -apple-system, 'Hiragino Kaku Gothic ProN', sans-serif; color: #e0d8c8; }
+
+#map {
+  position: absolute; inset: 0;
+  filter: grayscale(0.6) brightness(0.75) contrast(1.1);
+  z-index: 0;
+}
+
+/* 上部オーバーレイ */
+#top-bar {
+  position: absolute; top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 52px 16px 16px;
+  background: linear-gradient(to bottom, rgba(12,12,12,0.95) 60%, transparent);
+  pointer-events: none;
+}
+#app-title { font-size: 13px; font-weight: 700; color: #b8945a; letter-spacing: 0.15em; margin-bottom: 2px; }
+#app-sub { font-size: 11px; color: #3a3a3a; }
+
+/* モード切替 */
+#mode-bar {
+  position: absolute; top: 100px; left: 50%; transform: translateX(-50%);
+  z-index: 100;
+  display: flex; gap: 6px;
+  background: rgba(12,12,12,0.85);
+  border: 1px solid #1e1e1e;
+  border-radius: 20px;
+  padding: 5px 6px;
+  backdrop-filter: blur(10px);
+}
+.mode-btn {
+  padding: 7px 16px; border-radius: 14px;
+  border: none; background: transparent;
+  color: #4a4a4a; font-size: 14px; font-family: inherit;
+  cursor: pointer; transition: all 0.2s;
+  -webkit-appearance: none;
+}
+.mode-btn.active { background: #1e1e1e; color: #b8945a; }
+
+/* 残り距離バッジ（中央） */
+#dist-badge {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: 100;
+  display: none;
+  background: rgba(12,12,12,0.9);
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 12px 24px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+}
+#dist-badge.show { display: block; }
+#dist-num { font-size: 36px; font-weight: 700; color: #e0d8c8; letter-spacing: -0.02em; line-height: 1; }
+#dist-unit { font-size: 13px; color: #555; margin-top: 2px; }
+
+/* ボトムパネル */
+#bottom {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 16px 16px 48px;
+  background: linear-gradient(to top, rgba(12,12,12,0.97) 70%, transparent);
+}
+
+#go-btn {
+  width: 100%; padding: 16px 0;
+  border-radius: 14px; border: none;
+  font-size: 16px; font-weight: 700; font-family: inherit;
+  letter-spacing: 0.04em; cursor: pointer;
+  transition: all 0.3s; -webkit-appearance: none;
+}
+#go-btn.ready { background: linear-gradient(135deg, #c8a96e, #8c6430); color: #0c0c0c; }
+#go-btn.loading { background: #161616; color: #333; cursor: not-allowed; }
+
+#error-msg {
+  display: none;
+  font-size: 12px; color: #886060; line-height: 1.6;
+  margin-bottom: 10px; padding: 10px 12px;
+  background: #130d0d; border: 1px solid #2a1515; border-radius: 8px;
+}
+
+/* 到着モーダル */
+#reveal-modal {
+  display: none;
+  position: absolute; inset: 0; z-index: 200;
+  background: rgba(12,12,12,0.96);
+  flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 32px;
+  animation: fadeIn 0.5s ease;
+}
+#reveal-modal.show { display: flex; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+#reveal-icon { font-size: 72px; margin-bottom: 20px; animation: popIn 0.4s 0.1s both; }
+@keyframes popIn {
+  from { transform: scale(0.5); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+#reveal-label {
+  font-size: 12px; color: #b8945a; letter-spacing: 0.2em;
+  margin-bottom: 10px; animation: fadeUp 0.4s 0.2s both;
+}
+#reveal-name {
+  font-size: 28px; font-weight: 700; text-align: center; line-height: 1.3;
+  margin-bottom: 8px; animation: fadeUp 0.4s 0.3s both;
+}
+#reveal-cat {
+  font-size: 13px; color: #666; margin-bottom: 32px;
+  animation: fadeUp 0.4s 0.35s both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+#reveal-desc {
+  font-size: 13px; color: #555; line-height: 1.8; text-align: center;
+  margin-bottom: 32px; max-width: 300px;
+  animation: fadeUp 0.4s 0.4s both;
+}
+#reveal-again {
+  width: 100%; max-width: 320px; padding: 15px 0;
+  border-radius: 12px; border: none;
+  background: linear-gradient(135deg, #c8a96e, #8c6430);
+  color: #0c0c0c; font-size: 15px; font-weight: 700;
+  font-family: inherit; cursor: pointer;
+  animation: fadeUp 0.4s 0.5s both;
+  -webkit-appearance: none;
+}
+
+/* ？マーカー */
+.q-marker {
+  background: #b8945a;
+  color: #0c0c0c;
+  font-size: 16px; font-weight: 900;
+  width: 36px; height: 36px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.q-marker-inner { transform: rotate(45deg); }
+
+/* ズームコントロール */
+.leaflet-control-zoom {
+  border: 1px solid #2a2a2a !important;
+  background: rgba(12,12,12,0.85) !important;
+  backdrop-filter: blur(10px);
+  margin-bottom: 120px !important;
+}
+.leaflet-control-zoom a {
+  background: transparent !important;
+  color: #555 !important;
+  border-bottom: 1px solid #2a2a2a !important;
+}
+.leaflet-control-attribution {
+  font-size: 8px !important;
+  background: rgba(0,0,0,0.3) !important;
+  color: #333 !important;
+}
+.leaflet-control-attribution a { color: #444 !important; }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="top-bar">
+  <div id="app-title">NAVI</div>
+  <div id="app-sub">目的地は着いてからのお楽しみ</div>
+</div>
+
+<div id="mode-bar">
+  <button class="mode-btn active" data-mode="foot">🚶</button>
+  <button class="mode-btn" data-mode="bike">🚴</button>
+  <button class="mode-btn" data-mode="car">🚗</button>
+</div>
+
+<div id="dist-badge">
+  <div id="dist-num">—</div>
+  <div id="dist-unit">目的地まで</div>
+</div>
+
+<div id="bottom">
+  <div id="error-msg"></div>
+  <button id="go-btn" class="ready">どこか連れてって</button>
+</div>
+
+<div id="reveal-modal">
+  <div id="reveal-icon">🏛️</div>
+  <div id="reveal-label">ARRIVED</div>
+  <div id="reveal-name">名無しの謎スポット</div>
+  <div id="reveal-cat">謎のスポット</div>
+  <div id="reveal-desc"></div>
+  <button id="reveal-again">もう一回探す</button>
+</div>
+
+<script>
+const OSRM = 'https://router.project-osrm.org/route/v1';
+const OVERPASS = 'https://overpass-api.de/api/interpreter';
+
+const CATEGORY_LABELS = {
+  archaeological_site:'遺跡', ruins:'廃墟・遺構', monument:'モニュメント',
+  memorial:'記念碑', wayside_shrine:'道祖神', boundary_stone:'境界石',
+  stone:'謎の石', rock:'奇岩・巨石', cave_entrance:'洞窟入口',
+  shrine:'祠', place_of_worship:'寺社仏閣', castle:'城跡',
+  tomb:'古墳・墓', milestone:'里程標', well:'古井戸',
+};
+
+const OSRM_PROFILE = { foot: 'foot', bike: 'bike', car: 'driving' };
+
+let mode = 'foot';
+let userLat, userLon;
+let spotLat, spotLon, spotTags;
+let spots = [], chosen = null;
+let routeLayer = null, selfMarker = null, destMarker = null;
+let watchId = null;
+let arrived = false;
+
+// ---- 地図 ----
+const map = L.map('map', { zoomControl: false, attributionControl: true })
+  .setView([35.6812, 139.7671], 14);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap',
+  maxZoom: 19,
+}).addTo(map);
+
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+// ---- アイコン ----
+const selfIcon = L.divIcon({
+  html: '<div style="width:16px;height:16px;background:#4a9eff;border:3px solid white;border-radius:50%;box-shadow:0 0 8px rgba(74,158,255,0.8)"></div>',
+  className: '', iconAnchor: [8, 8],
+});
+
+const destIcon = L.divIcon({
+  html: '<div class="q-marker"><div class="q-marker-inner">?</div></div>',
+  className: '', iconAnchor: [18, 36],
+});
+
+// ---- ユーティリティ ----
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = (lat2-lat1)*Math.PI/180;
+  const dLon = (lon2-lon1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return Math.round(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
+}
+
+function getIcon(tags) {
+  if (!tags) return '📍';
+  if (tags.historic === 'wayside_shrine') return '⛩️';
+  if (tags.historic === 'ruins') return '🏚️';
+  if (tags.historic === 'castle') return '🏯';
+  if (tags.historic === 'tomb') return '⛰️';
+  if (tags.historic === 'boundary_stone') return '🪨';
+  if (tags.historic) return '🏛️';
+  if (tags.natural === 'rock') return '🪨';
+  if (tags.natural === 'cave_entrance') return '🕳️';
+  if (tags.amenity === 'place_of_worship') return '🏮';
+  return '📍';
+}
+
+function getLabel(tags) {
+  if (!tags) return '名無しの謎スポット';
+  if (tags.name) return tags.name;
+  const t = tags.historic || tags.natural || tags.amenity;
+  return CATEGORY_LABELS[t] || '名無しの謎スポット';
+}
+
+function getCategory(tags) {
+  const t = tags?.historic || tags?.natural || tags?.amenity;
+  return CATEGORY_LABELS[t] || '謎のスポット';
+}
+
+function fmtDist(m) {
+  return m < 1000 ? m + 'm' : (m/1000).toFixed(1) + 'km';
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+}
+
+function hideError() { document.getElementById('error-msg').style.display = 'none'; }
+
+function setBtn(state, text) {
+  const btn = document.getElementById('go-btn');
+  btn.className = state;
+  btn.textContent = text;
+  btn.disabled = state !== 'ready';
+}
+
+// ---- 距離バッジ更新 ----
+function updateDistBadge(lat, lon) {
+  if (!spotLat) return;
+  const d = haversine(lat, lon, spotLat, spotLon);
+  const badge = document.getElementById('dist-badge');
+  badge.classList.add('show');
+  document.getElementById('dist-num').textContent = fmtDist(d);
+
+  // 50m以内で到着判定
+  if (d < 50 && !arrived) {
+    arrived = true;
+    showReveal();
+  }
+}
+
+// ---- 現在地マーカー更新 ----
+function updateSelf(lat, lon) {
+  userLat = lat; userLon = lon;
+  if (!selfMarker) {
+    selfMarker = L.marker([lat, lon], { icon: selfIcon, zIndexOffset: 1000 }).addTo(map);
+  } else {
+    selfMarker.setLatLng([lat, lon]);
+  }
+  updateDistBadge(lat, lon);
+}
+
+// ---- ルート描画 ----
+async function drawRoute(fromLat, fromLon, toLat, toLon) {
+  const profile = OSRM_PROFILE[mode];
+  const url = `${OSRM}/${profile}/${fromLon},${fromLat};${toLon},${toLat}?overview=full&geometries=geojson`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!data.routes || data.routes.length === 0) throw new Error('ルートが見つかりませんでした');
+
+  if (routeLayer) map.removeLayer(routeLayer);
+  routeLayer = L.geoJSON(data.routes[0].geometry, {
+    style: { color: '#b8945a', weight: 4, opacity: 0.85, lineCap: 'round', lineJoin: 'round' }
+  }).addTo(map);
+
+  // 全体が見えるようにフィット
+  map.fitBounds(routeLayer.getBounds(), { padding: [60, 60] });
+}
+
+// ---- Overpass ----
+async function fetchSpots(lat, lon, r = 1500) {
+  const q = `[out:json][timeout:25];
+(
+  node["historic"](around:${r},${lat},${lon});
+  node["natural"="rock"](around:${r},${lat},${lon});
+  node["natural"="cave_entrance"](around:${r},${lat},${lon});
+  node["man_made"="shrine"](around:${r},${lat},${lon});
+  node["amenity"="place_of_worship"](around:${r},${lat},${lon});
+);
+out body;`;
+  const res = await fetch(OVERPASS, {
+    method: 'POST',
+    body: 'data=' + encodeURIComponent(q),
+  });
+  const data = await res.json();
+  return (data.elements || [])
+    .filter(e => e.lat && e.lon)
+    .map(e => ({ ...e, distance: haversine(lat, lon, e.lat, e.lon) }))
+    .filter(e => e.distance > 50);
+}
+
+// ---- 到着演出 ----
+function showReveal() {
+  if (watchId) navigator.geolocation.clearWatch(watchId);
+  const modal = document.getElementById('reveal-modal');
+  document.getElementById('reveal-icon').textContent = getIcon(spotTags);
+  document.getElementById('reveal-name').textContent = getLabel(spotTags);
+  document.getElementById('reveal-cat').textContent = getCategory(spotTags);
+  document.getElementById('reveal-desc').textContent =
+    spotTags?.description || spotTags?.note || '';
+  modal.classList.add('show');
+}
+
+// ---- メイン ----
+async function go() {
+  hideError();
+  arrived = false;
+  setBtn('loading', '📡 現在地を取得中...');
+  document.getElementById('dist-badge').classList.remove('show');
+
+  // 現在地取得
+  const loc = await new Promise((res, rej) => {
+    if (!navigator.geolocation) { rej('位置情報未対応'); return; }
+    navigator.geolocation.getCurrentPosition(
+      p => res({ lat: p.coords.latitude, lon: p.coords.longitude }),
+      () => rej('位置情報を取得できませんでした。Safariの設定を確認してください。'),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }).catch(e => { showError(e); setBtn('ready', 'どこか連れてって'); return null; });
+  if (!loc) return;
+
+  updateSelf(loc.lat, loc.lon);
+  map.setView([loc.lat, loc.lon], 15);
+
+  setBtn('loading', '🔍 スポットを探しています...');
+
+  // スポット取得（失敗したらデモデータ）
+  let elements = [];
+  try {
+    elements = await fetchSpots(loc.lat, loc.lon);
+  } catch (e) {
+    showError('スポットデータの取得に失敗しました。通信状況を確認してください。');
+    setBtn('ready', 'どこか連れてって');
+    return;
+  }
+
+  if (elements.length === 0) {
+    showError('このエリアにスポットが見つかりませんでした。');
+    setBtn('ready', 'どこか連れてって');
+    return;
+  }
+
+  spots = elements;
+  const pick = spots[Math.floor(Math.random() * spots.length)];
+  chosen = pick;
+  spotLat = pick.lat; spotLon = pick.lon; spotTags = pick.tags;
+
+  // 目的地マーカー（？）
+  if (destMarker) map.removeLayer(destMarker);
+  destMarker = L.marker([spotLat, spotLon], { icon: destIcon }).addTo(map);
+
+  // ルート描画
+  setBtn('loading', '🗺️ ルートを計算中...');
+  try {
+    await drawRoute(loc.lat, loc.lon, spotLat, spotLon);
+  } catch (e) {
+    // ルート失敗しても続行（直線で対応）
+    const bounds = L.latLngBounds([loc.lat, loc.lon], [spotLat, spotLon]);
+    map.fitBounds(bounds, { padding: [60, 60] });
+  }
+
+  updateDistBadge(loc.lat, loc.lon);
+  setBtn('ready', '🎲 別のとこにして');
+
+  // 位置追跡開始
+  if (watchId) navigator.geolocation.clearWatch(watchId);
+  watchId = navigator.geolocation.watchPosition(
+    p => {
+      updateSelf(p.coords.latitude, p.coords.longitude);
+      // 現在地マーカーが地図外に出たら追従
+      if (!map.getBounds().contains([p.coords.latitude, p.coords.longitude])) {
+        map.panTo([p.coords.latitude, p.coords.longitude]);
+      }
+    },
+    null,
+    { enableHighAccuracy: true }
+  );
+}
+
+// ---- イベント ----
+document.getElementById('go-btn').addEventListener('click', () => {
+  if (document.getElementById('go-btn').className === 'loading') return;
+  go();
+});
+
+document.getElementById('reveal-again').addEventListener('click', () => {
+  document.getElementById('reveal-modal').classList.remove('show');
+  if (destMarker) map.removeLayer(destMarker);
+  if (routeLayer) map.removeLayer(routeLayer);
+  document.getElementById('dist-badge').classList.remove('show');
+  setBtn('ready', 'どこか連れてって');
+});
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    mode = btn.dataset.mode;
+  });
+});
+</script>
+</body>
+</html>
