@@ -14,7 +14,7 @@ html, body { height: 100%; overflow: hidden; background: #0c0c0c; font-family: -
 
 #map {
   position: absolute; inset: 0;
-  filter: grayscale(0.6) brightness(0.75) contrast(1.1);
+  filter: brightness(0.9) contrast(1.05);
   z-index: 0;
 }
 
@@ -232,8 +232,9 @@ let arrived = false;
 const map = L.map('map', { zoomControl: false, attributionControl: true })
   .setView([35.6812, 139.7671], 14);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap',
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+  attribution: '© CARTO',
+  subdomains: 'abcd',
   maxZoom: 19,
 }).addTo(map);
 
