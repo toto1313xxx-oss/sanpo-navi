@@ -126,11 +126,10 @@ html, body { height: 100%; overflow: hidden; background: #050307; color: #e8d9b8
 const OSRM = 'https://router.project-osrm.org/route/v1';
 const OVERPASS_SERVERS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
 
-// ★【超重要】移動手段に紐づく探索半径の最小・最大（メートル）
 const DIST_CONFIG = {
-  foot: { min: 300, max: 1500 },     // 徒歩：身近な路地裏（徒歩5分〜20分圏内）
-  bike: { min: 1500, max: 5000 },    // 自転車：少し遠くの隣町（チャリ10分〜25分圏内）
-  car: { min: 5000, max: 15000 }     // 車：完全に非日常の領域（車15分〜30分圏内）
+  foot: { min: 200, max: 1500 },     // 徒歩：身近な路地裏
+  bike: { min: 1500, max: 5000 },    // 自転車：少し遠くの隣町
+  car: { min: 5000, max: 15000 }     // 車：完全に非日常の領域
 };
 
 const OSRM_PROFILE = { foot: 'foot', bike: 'bike', car: 'driving' };
@@ -138,22 +137,23 @@ const OSRM_PROFILE = { foot: 'foot', bike: 'bike', car: 'driving' };
 const HORROR_KEYWORDS = /血|鬼|呪|死|首|怨|霊|怪|妖|幽|地獄|供養|処刑|刑場|無縁|殉難|墓|塚|事故|心霊|骨|闇|魔|隠|仏|寺/;
 const EMOTION_KEYWORDS = /民話|伝説|文学|物語|信仰|聖地|遺跡|名木|巨木|奇岩|滝|湧水|名水|古道|旧道|城跡|跡|庵|碑|灯籠|橋|辨財天|弁天/;
 
+// モードごとの語り（お地蔵さん、巨木、レトロな違和感の情景を反映）
 const STORIES = {
   horror: [
-     "地元の古老さえ口を閉ざす、地図から半分消されたかのような境界。陽が落ちてからここに長居した者は、枕元に立つ「濡れた影」にうなされるという。",
-     "かつて大きな戦、あるいは恐ろしい野ざらしの果てに、無数の無縁仏が埋められたと伝わる土壌。耳を澄ますと、風の音に混じって現世を呪うような囁きが聞こえる。",
-     "古い記録には『不入の地』と記された、霊脈が激しくねじ曲がった特異点。古くから奇妙な神隠しや、説明のつかない辻斬りが多発したと噂される路地裏。",
-     "此処に遺された石造物の裏には、削り取られた古い呪詛の文字が眠る。興味本位で足を踏み入れた者は、帰路で必ず『数が増えている足音』を聴くことになる。"
+     "コンクリートの隙間を歪めて育った、都市を侵食するような巨木の境界。その根の下には、かつて現世の地図から消された恐ろしい記録が眠っているという。",
+     "不自然にビシッと並ぶお地蔵さんの列。カメラのファインダー越しに数えると、なぜか記録よりも1体多く写り込み、その1体だけが妙にリアルな笑みを浮かべている。",
+     "錆びついたレトロなパンダの遊具が佇む、夕暮れの寂れた公園。風もないのに、誰も乗せていないバネが「キィ…キィ…」と不穏な音を立てて微かに揺れ続けている。",
+     "かつて大きな戦や無縁仏の果てに築かれた土壌。興味本位で足を踏み入れた者は、その日の帰り道で必ず『自分の後ろを歩く、数が増えていく足音』を聴くことになる。"
   ],
   emotion: [
-     "数百年もの間、旅人たちを見守り、あるいはその涙を吸い込んできた静謐なる古跡。都会の喧騒のすぐ裏で、ここだけが時の流れから完全に置き去りにされている。",
-     "古き時代の詩人や異端の信仰者たちが、人目を忍んで集ったとされる祈りの残滓。空気はどこか冷たくも優しく、今なお目に見えない古い約束が生きている気配がする。",
-     "名もなき旅人が行き倒れ、その魂を慰めるために路傍にそっと建てられた小さな標。かつてここを通った数千人の足跡が、目に見えない幾何学模様となって地面に刻まれている。",
-     "夜露に濡れた苔の下に、歴史の教科書には決して載らない市井の民のささやかな願いが眠る場所。目を閉じると、遥か昔の誰かの祈りの唄が、胸の奥に静かに響き渡る。"
+     "住宅街の片隅にポツンと残された、空中へ繋がる存在しない2階への扉（トマソン階段）。かつてそこにあった日常の記憶を、剥き出しの鉄骨だけが今もひっそりと守っている。",
+     "数百年もの間、旅人たちを見守り、あるいはその涙を吸い込んできた静謐なる名木。都会の喧騒のすぐ裏で、ここだけが時の流れから完全に置き去りにされている。",
+     "昭和の面影を残したまま時間が止まった、ロードサイドの寂れた自販機コーナーの残滓。蛍光灯がチカチカと明滅し、ここだけ空気の密度が違っているかのような錯覚を覚える。",
+     "夜露に濡れた苔の下に、歴史の教科書には決して載らない市井の民のささやかな祈りが眠る場所。目を閉じると、遥か昔の誰かの呟きが、胸の奥に静かに響き渡る。"
   ],
   default: [
-     "現世の合理的な開発から奇跡的にこぼれ落ちた、時間線の空白地帯。かつてここに何があったのか、それを知る術は失われているが、土地の記憶だけが確かに息づいている。",
-     "都市の血管の隙間に潜む、静かなる隠れ里。訪れる者の心の歪みに応じて、この場所は優しくも、時に冷酷な顔を見せるという。辿り着いた事自体が、一つの奇縁である。"
+     "現世の合理的な都市開発から奇跡的にこぼれ落ちた、時間線の空白地帯。かつてここに何があったのか、それを知る術は失われているが、土地の記憶だけが確かに息づいている。",
+     "都市の血管の隙間に潜む、静かなる違和感。訪れる者の心の歪みに応じて、この場所は優しくも、時に冷酷な顔を見せるという。辿り着いた事自体が、一つの奇縁である。"
   ]
 };
 
@@ -186,7 +186,7 @@ function haversine(lat1, lon1, lat2, lon2) {
 
 function getDetails(s) {
   const t = s.tags || {};
-  const name = s.name || t.name || t['name:ja'] || '名無き遺構';
+  const name = s.name || t.name || t['name:ja'] || '名無き違和感';
   
   let icon = '📍';
   let cat = '隠れた古跡';
@@ -195,19 +195,18 @@ function getDetails(s) {
   if (HORROR_KEYWORDS.test(name) || t.historic === 'tomb' || t.amenity === 'grave_yard') {
     icon = '👻'; cat = '怪異伝承の地'; modeKey = 'horror';
   } else if (t.historic === 'wayside_shrine' || t.historic === 'wayside_cross') {
-    icon = '🪦'; cat = '路傍の石仏・祠'; modeKey = emotion ? 'emotion' : (horror ? 'horror' : 'default');
+    icon = '🪦'; cat = '路傍のお地蔵さん・祠'; modeKey = horror ? 'horror' : 'default';
   } else if (t.historic === 'castle' || t.historic === 'fortress') {
     icon = '🏯'; cat = '古城・砦の残滓'; modeKey = 'emotion';
   } else if (t.natural === 'tree' || t.natural === 'stone') {
-    icon = '🌳'; cat = '老木・霊石の境界'; modeKey = 'emotion';
+    icon = '🌳'; cat = '老木・巨木の境界'; modeKey = 'emotion';
   } else if (t.waterway === 'waterfall' || t.natural === 'spring') {
     icon = '🏞️'; cat = '秘められた名瀑・湧水'; modeKey = 'emotion';
   } else if (t.amenity === 'place_of_worship') {
     icon = '⛩️'; cat = '由緒ある社寺の影'; modeKey = emotion ? 'emotion' : 'default';
-  } else if (EMOTION_KEYWORDS.test(name) || t.historic) {
-    icon = '✨'; cat = '詩情あふれる古跡'; modeKey = 'emotion';
   }
 
+  // 強制モード適用時の微調整
   if (horror) { icon = '👻'; cat = '境界線上の怪異'; modeKey = 'horror'; }
   else if (emotion) { icon = '✨'; cat = '時の止まった静寂'; modeKey = 'emotion'; }
 
@@ -215,7 +214,7 @@ function getDetails(s) {
   const arr = STORIES[modeKey] || STORIES['default'];
   const baseDesc = arr[parseInt(hash) % arr.length];
   
-  const subInfo = t.description ? `\n（現世の記録: ${t.description}）` : '';
+  const subInfo = t.description ? `\n\n（現世の記録: ${t.description}）` : '';
   return { name, icon, cat, desc: baseDesc + subInfo };
 }
 
@@ -256,23 +255,22 @@ function updateLocation(lat, lon) {
   checkArrival(lat, lon);
 }
 
-// ★【大改修】選択されたモードに応じた「最大半径」でクエリを動的に生成
+// ★【大改修】点(node)と面(way)を両方網羅する爆速Overpassクエリ
 async function fetchSpots(lat, lon) {
   const cfg = DIST_CONFIG[mode];
   const maxRadius = cfg.max;
 
-  // 車の場合は対象データが爆増するため、軽めのタグ（主要な古跡・社寺）に絞ってタイムアウトを防ぐ
-  const filterString = (mode === 'car') 
-    ? `node["historic"~"castle|fortress|monument|ruins|tomb"](around:${maxRadius},${lat},${lon});
-       node["amenity"="grave_yard"](around:${maxRadius},${lat},${lon});
-       node["waterway"="waterfall"](around:${maxRadius},${lat},${lon});`
-    : `node["historic"](around:${maxRadius},${lat},${lon});
-       node["amenity"~"place_of_worship|grave_yard"](around:${maxRadius},${lat},${lon});
-       node["natural"~"rock|stone|cave_entrance|spring|tree"](around:${maxRadius},${lat},${lon});
-       node["waterway"="waterfall"](around:${maxRadius},${lat},${lon});
-       node["railway"~"abandoned|disused"](around:${maxRadius},${lat},${lon});`;
+  // 面データ(way)も取りこぼさないよう nw を採用。車でもフィルター制限をかけずに全拾いする
+  const filterString = `
+    nw["historic"](around:${maxRadius},${lat},${lon});
+    nw["amenity"~"place_of_worship|grave_yard"](around:${maxRadius},${lat},${lon});
+    nw["natural"~"rock|stone|cave_entrance|spring|tree"](around:${maxRadius},${lat},${lon});
+    nw["waterway"="waterfall"](around:${maxRadius},${lat},${lon});
+    nw["railway"~"abandoned|disused"](around:${maxRadius},${lat},${lon});
+  `;
 
-  const opaq = `[out:json][timeout:25];(${filterString});out center;`;
+  // [out:center]を付与することで、面データでも中心の緯度経度を自動算出してくれる
+  const opaq = `[out:json][timeout:30];(${filterString});out center;`;
 
   for (const server of OVERPASS_SERVERS) {
     try {
@@ -280,8 +278,10 @@ async function fetchSpots(lat, lon) {
       if (!res.ok) continue;
       const data = await res.json();
       return (data.elements || []).map(e => ({
-        lat: e.lat || e.center?.lat, lon: e.lon || e.center?.lon,
-        tags: e.tags || {}, id: 'osm-' + e.id
+        lat: e.lat || e.center?.lat, 
+        lon: e.lon || e.center?.lon,
+        tags: e.tags || {}, 
+        id: e.type + '-' + e.id
       })).filter(e => e.lat && e.lon);
     } catch (err) {}
   }
@@ -290,7 +290,7 @@ async function fetchSpots(lat, lon) {
 
 async function startJourney() {
   hideError();
-  setBtnState(true, '霊脈を探索中...');
+  setBtnState(true, '霊脈を特定中...');
   
   try {
     const pos = await new Promise((res, rej) => {
@@ -301,28 +301,41 @@ async function startJourney() {
     
     let list = await fetchSpots(userLat, userLon);
     
-    // ★【大改修】直線距離を算出し、各モードの「最小〜最大」のドーナツ範囲内に厳密フィルタリング
+    // 直線距離の計算と、移動手段に応じた「ドーナツ範囲（最小〜最大）」での厳密フィルタ
     const cfg = DIST_CONFIG[mode];
     list.forEach(s => s.dist = haversine(userLat, userLon, s.lat, s.lon));
     list = list.filter(s => s.dist >= cfg.min && s.dist <= cfg.max);
 
-    // 除外リストと既読リストの適用
+    // 除外リスト、既読リストの適用
     list = list.filter(s => !badReports.includes(s.id) && !recentPicks.includes(s.id));
     
-    // 世界観フィルター
+    // ★【大改修】ゼロ件全滅を防ぐためのマイルドな世界観フィルター
     if (horror) {
-      list = list.filter(s => HORROR_KEYWORDS.test(s.tags.name || '') || s.tags.amenity === 'grave_yard');
+      list = list.filter(s => {
+        const name = s.tags.name || '';
+        return HORROR_KEYWORDS.test(name) || 
+               s.tags.amenity === 'grave_yard' || 
+               s.tags.historic === 'tomb' ||
+               s.tags.historic === 'wayside_shrine' || 
+               Math.random() > 0.6; // テキストに不穏ワードがなくても、怪異の舞台として救済抽出
+      });
     } else if (emotion) {
-      list = list.filter(s => EMOTION_KEYWORDS.test(s.tags.name || '') || s.tags.historic);
+      list = list.filter(s => {
+        const name = s.tags.name || '';
+        return EMOTION_KEYWORDS.test(name) || 
+               s.tags.historic !== undefined || 
+               s.tags.natural === 'tree' ||
+               Math.random() > 0.4; // 詩情あふれる空白地帯として救済抽出
+      });
     }
 
     if (!list.length) { 
-      showError(`この移動手段（${mode === 'foot' ? '徒歩圏内' : mode === 'bike' ? '自転車圏内' : '車圏内'}）で見つかる「幽路」がありません。条件を変えるか移動してください。`); 
+      showError(`この領域（${mode === 'foot' ? '徒歩圏内' : mode === 'bike' ? '自転車圏内' : '車圏内'}）に条件に合う幽路がありません。モードを変えるか少し移動してください。`); 
       setBtnState(false, 'どこか連れてって'); 
       return; 
     }
 
-    // 近いものから上位数件を抽選対象にする（遠すぎるものが極端に選ばれないようにソート）
+    // 遠すぎるものが選ばれにくいよう距離ソートし、上位数件からランダム抽選
     list.sort((a,b) => a.dist - b.dist);
     chosenSpot = list[Math.floor(Math.random() * Math.min(list.length, 6))];
     
@@ -355,7 +368,7 @@ async function startJourney() {
     }, null, { enableHighAccuracy: true });
 
   } catch (err) {
-    showError('位置情報または霊脈の境界を特定できませんでした');
+    showError('位置情報または霊脈の特定に失敗しました。位置情報の利用を許可してください。');
     setBtnState(false, 'どこか連れてって');
   }
 }
@@ -382,8 +395,10 @@ document.querySelectorAll('.mode-btn[data-mode]').forEach(b => {
     b.classList.add('active'); mode = b.dataset.mode;
   });
 });
+
 document.getElementById('emotion-btn').addEventListener('click', () => { emotion = !emotion; if (emotion) horror = false; updateFilters(); });
 document.getElementById('horror-btn').addEventListener('click', () => { horror = !horror; if (horror) emotion = false; updateFilters(); });
+
 function updateFilters() {
   document.getElementById('emotion-btn').classList.toggle('active', emotion);
   document.getElementById('horror-btn').classList.toggle('active', horror);
