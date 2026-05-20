@@ -11,7 +11,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; overflow: hidden; background: #050307; color: #e8d9b8; font-family: 'Shippori Mincho', serif; }
 
-/* ===== 空間演出レイヤー（CSSフィルター完全排除・GPU駆動） ===== */
+/* ===== 空間演出レイヤー ===== */
 #map { position: absolute; inset: 0; z-index: 0; background: #09060f; }
 .vignette { position: absolute; inset: 0; pointer-events: none; z-index: 2; background: radial-gradient(circle, transparent 30%, rgba(5,3,7,0.85) 100%); }
 .ambient-glow { position: absolute; inset: 0; pointer-events: none; z-index: 1; background: radial-gradient(circle at 80% 20%, rgba(94,55,120,0.22), transparent 45%), radial-gradient(circle at 10% 80%, rgba(212,175,106,0.15), transparent 50%); will-change: transform; animation: ambientSwing 25s ease-in-out infinite alternate; }
@@ -50,7 +50,7 @@ html, body { height: 100%; overflow: hidden; background: #050307; color: #e8d9b8
 #go-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 #error-msg { display: none; font-size: 11px; color: #c89090; margin-bottom: 12px; padding: 10px; background: rgba(40,10,20,0.6); border: 1px solid rgba(180,80,80,0.4); border-radius: 8px; text-align: center; }
 
-/* ===== 劇的な REVEAL MODAL ===== */
+/* ===== REVEAL MODAL ===== */
 #reveal-modal { display: none; position: absolute; inset: 0; z-index: 300; background: radial-gradient(circle at center, #11091c 0%, #040206 100%); flex-direction: column; align-items: center; justify-content: center; padding: 28px; text-align: center; opacity: 0; transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
 #reveal-modal.show { display: flex; opacity: 1; }
 #reveal-icon { font-size: 64px; margin-bottom: 16px; filter: drop-shadow(0 0 20px rgba(212,175,106,0.5)); animation: floatGlow 3s ease-in-out infinite; }
@@ -62,7 +62,7 @@ html, body { height: 100%; overflow: hidden; background: #050307; color: #e8d9b8
 .reveal-btn { flex: 1; padding: 14px 0; border-radius: 12px; border: 1px solid rgba(212,175,106,0.3); background: rgba(12,9,18,0.7); color: #8d7b94; font-size: 13px; font-family: inherit; font-weight: 600; letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; }
 .reveal-btn.primary { background: linear-gradient(135deg, rgba(212,175,106,0.25), rgba(94,55,120,0.25)); color: #f0d49a; border-color: #d4af6a; box-shadow: 0 4px 15px rgba(212,175,106,0.2); }
 
-/* ===== 妖しく脈打つマップピン ===== */
+/* ===== マップピン ===== */
 .q-marker { width: 34px; height: 34px; background: radial-gradient(circle at 35% 35%, #ecdbb5, #8b6f3a); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; position: relative; }
 .q-marker::before { content: ""; position: absolute; inset: -8px; border-radius: 50%; border: 1px solid rgba(212,175,106,0.5); animation: pinPulse 2s cubic-bezier(0.215, 0.610, 0.355, 1) infinite; pointer-events: none; }
 @keyframes pinPulse { from { transform: scale(0.6); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
@@ -125,14 +125,19 @@ html, body { height: 100%; overflow: hidden; background: #050307; color: #e8d9b8
 <script>
 const OSRM = 'https://router.project-osrm.org/route/v1';
 const OVERPASS_SERVERS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
-const MODE_RADIUS = { foot: 1500, bike: 4000, car: 12000 };
+
+// ★【超重要】移動手段に紐づく探索半径の最小・最大（メートル）
+const DIST_CONFIG = {
+  foot: { min: 300, max: 1500 },     // 徒歩：身近な路地裏（徒歩5分〜20分圏内）
+  bike: { min: 1500, max: 5000 },    // 自転車：少し遠くの隣町（チャリ10分〜25分圏内）
+  car: { min: 5000, max: 15000 }     // 車：完全に非日常の領域（車15分〜30分圏内）
+};
+
 const OSRM_PROFILE = { foot: 'foot', bike: 'bike', car: 'driving' };
 
-// 拡張されたキーワード群
 const HORROR_KEYWORDS = /血|鬼|呪|死|首|怨|霊|怪|妖|幽|地獄|供養|処刑|刑場|無縁|殉難|墓|塚|事故|心霊|骨|闇|魔|隠|仏|寺/;
 const EMOTION_KEYWORDS = /民話|伝説|文学|物語|信仰|聖地|遺跡|名木|巨木|奇岩|滝|湧水|名水|古道|旧道|城跡|跡|庵|碑|灯籠|橋|辨財天|弁天/;
 
-// ストーリーテリング用フレーズデータベース
 const STORIES = {
   horror: [
      "地元の古老さえ口を閉ざす、地図から半分消されたかのような境界。陽が落ちてからここに長居した者は、枕元に立つ「濡れた影」にうなされるという。",
@@ -179,7 +184,6 @@ function haversine(lat1, lon1, lat2, lon2) {
   return Math.round(R*2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 }
 
-// 検索結果の「深み」を動的に演出するコアルーチン
 function getDetails(s) {
   const t = s.tags || {};
   const name = s.name || t.name || t['name:ja'] || '名無き遺構';
@@ -188,7 +192,6 @@ function getDetails(s) {
   let cat = '隠れた古跡';
   let modeKey = 'default';
 
-  // 1. カテゴリとアイコンの厳密なマッピング
   if (HORROR_KEYWORDS.test(name) || t.historic === 'tomb' || t.amenity === 'grave_yard') {
     icon = '👻'; cat = '怪異伝承の地'; modeKey = 'horror';
   } else if (t.historic === 'wayside_shrine' || t.historic === 'wayside_cross') {
@@ -205,18 +208,14 @@ function getDetails(s) {
     icon = '✨'; cat = '詩情あふれる古跡'; modeKey = 'emotion';
   }
 
-  // 2. 現在の選択モードによる上書き判定
   if (horror) { icon = '👻'; cat = '境界線上の怪異'; modeKey = 'horror'; }
   else if (emotion) { icon = '✨'; cat = '時の止まった静寂'; modeKey = 'emotion'; }
 
-  // 3. IDから決定論的なストーリーインデックスを抽出して割り当て
   const hash = s.id ? s.id.split('-')[1] || 0 : 0;
   const arr = STORIES[modeKey] || STORIES['default'];
   const baseDesc = arr[parseInt(hash) % arr.length];
   
-  // タグ情報があれば少し補足
   const subInfo = t.description ? `\n（現世の記録: ${t.description}）` : '';
-
   return { name, icon, cat, desc: baseDesc + subInfo };
 }
 
@@ -235,7 +234,6 @@ function checkArrival(lat, lon) {
   document.getElementById('dist-badge').classList.add('show');
   document.getElementById('dist-num').textContent = d < 1000 ? d + 'm' : (d/1000).toFixed(1) + 'km';
   
-  // 40メートル以内で「発見（Reveal）」
   if (d <= 40) {
     if (watchId) navigator.geolocation.clearWatch(watchId);
     const details = getDetails(chosenSpot);
@@ -258,15 +256,23 @@ function updateLocation(lat, lon) {
   checkArrival(lat, lon);
 }
 
+// ★【大改修】選択されたモードに応じた「最大半径」でクエリを動的に生成
 async function fetchSpots(lat, lon) {
-  const r = horror ? (mode === 'foot' ? 3500 : 12000) : MODE_RADIUS[mode];
-  const opaq = `[out:json][timeout:30];(
-    node["historic"](around:${r},${lat},${lon});
-    node["amenity"~"place_of_worship|grave_yard"](around:${r},${lat},${lon});
-    node["natural"~"rock|stone|cave_entrance|spring|tree"](around:${r},${lat},${lon});
-    node["waterway"="waterfall"](around:${r},${lat},${lon});
-    node["railway"~"abandoned|disused"](around:${r},${lat},${lon});
-  );out center;`;
+  const cfg = DIST_CONFIG[mode];
+  const maxRadius = cfg.max;
+
+  // 車の場合は対象データが爆増するため、軽めのタグ（主要な古跡・社寺）に絞ってタイムアウトを防ぐ
+  const filterString = (mode === 'car') 
+    ? `node["historic"~"castle|fortress|monument|ruins|tomb"](around:${maxRadius},${lat},${lon});
+       node["amenity"="grave_yard"](around:${maxRadius},${lat},${lon});
+       node["waterway"="waterfall"](around:${maxRadius},${lat},${lon});`
+    : `node["historic"](around:${maxRadius},${lat},${lon});
+       node["amenity"~"place_of_worship|grave_yard"](around:${maxRadius},${lat},${lon});
+       node["natural"~"rock|stone|cave_entrance|spring|tree"](around:${maxRadius},${lat},${lon});
+       node["waterway"="waterfall"](around:${maxRadius},${lat},${lon});
+       node["railway"~"abandoned|disused"](around:${maxRadius},${lat},${lon});`;
+
+  const opaq = `[out:json][timeout:25];(${filterString});out center;`;
 
   for (const server of OVERPASS_SERVERS) {
     try {
@@ -294,9 +300,16 @@ async function startJourney() {
     map.setView([userLat, userLon], 15);
     
     let list = await fetchSpots(userLat, userLon);
+    
+    // ★【大改修】直線距離を算出し、各モードの「最小〜最大」のドーナツ範囲内に厳密フィルタリング
+    const cfg = DIST_CONFIG[mode];
+    list.forEach(s => s.dist = haversine(userLat, userLon, s.lat, s.lon));
+    list = list.filter(s => s.dist >= cfg.min && s.dist <= cfg.max);
+
+    // 除外リストと既読リストの適用
     list = list.filter(s => !badReports.includes(s.id) && !recentPicks.includes(s.id));
     
-    // 拡張フィルタリング判定
+    // 世界観フィルター
     if (horror) {
       list = list.filter(s => HORROR_KEYWORDS.test(s.tags.name || '') || s.tags.amenity === 'grave_yard');
     } else if (emotion) {
@@ -304,16 +317,14 @@ async function startJourney() {
     }
 
     if (!list.length) { 
-      showError('この領域に新たな「幽路」は交差していません（条件を少し緩めるか、移動してください）'); 
+      showError(`この移動手段（${mode === 'foot' ? '徒歩圏内' : mode === 'bike' ? '自転車圏内' : '車圏内'}）で見つかる「幽路」がありません。条件を変えるか移動してください。`); 
       setBtnState(false, 'どこか連れてって'); 
       return; 
     }
 
-    list.forEach(s => s.dist = haversine(userLat, userLon, s.lat, s.lon));
+    // 近いものから上位数件を抽選対象にする（遠すぎるものが極端に選ばれないようにソート）
     list.sort((a,b) => a.dist - b.dist);
-    
-    // 近すぎず遠すぎない、かつある程度ランダムな上位5件からチョイス
-    chosenSpot = list[Math.floor(Math.random() * Math.min(list.length, 5))];
+    chosenSpot = list[Math.floor(Math.random() * Math.min(list.length, 6))];
     
     spotLat = chosenSpot.lat; spotLon = chosenSpot.lon;
     recentPicks.push(chosenSpot.id); if (recentPicks.length > 20) recentPicks.shift();
@@ -331,7 +342,7 @@ async function startJourney() {
 
     const det = getDetails(chosenSpot);
     document.getElementById('debug-name').textContent = det.name;
-    document.getElementById('debug-meta').textContent = `${det.cat} / 距離 ${chosenSpot.dist}m`;
+    document.getElementById('debug-meta').textContent = `${det.cat} / 直線距離 ${chosenSpot.dist}m (${mode === 'foot' ? '徒歩' : mode === 'bike' ? '自転車' : '車'})`;
     document.getElementById('debug-gmap').href = `https://maps.google.com/?q=${spotLat},${spotLon}`;
     document.getElementById('debug-panel').style.display = 'block';
 
