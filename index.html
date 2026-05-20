@@ -1,460 +1,113 @@
-<!-- =========================
-軽量化 + リッチUI 強化パック
-そのままコピペOK
-========================= -->
-
+<!-- ===== 修正追加: map最適化 ===== -->
 <style>
-
-/* ===== GPU最適化 ===== */
-
-html,
-body,
 #map {
-  transform: translateZ(0);
   will-change: transform;
+  transform: translateZ(0);
 }
 
-/* ===== backdrop-filter全廃 ===== */
-
+/* blur軽量化 */
 #mode-bar,
 #dist-badge,
-#debug-panel,
-#reveal-modal,
-#top-overlay,
-#bottom {
-  backdrop-filter: none !important;
+#reveal-modal {
+  backdrop-filter: blur(8px) !important;
 }
 
-/* ===== UI高級化 ===== */
-
-#map {
-  filter:
-    brightness(0.72)
-    contrast(1.12)
-    saturate(0.9)
-    hue-rotate(-12deg);
-}
-
-/* ===== 霧 ===== */
-
+/* 霧エフェクト */
 body::after {
   content:'';
   position:fixed;
   inset:0;
   pointer-events:none;
-
   background:
-    radial-gradient(
-      circle at 20% 30%,
-      rgba(255,255,255,0.025),
-      transparent 45%
-    ),
-    radial-gradient(
-      circle at 80% 60%,
-      rgba(255,255,255,0.02),
-      transparent 40%
-    );
-
-  opacity:0.4;
+    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.03), transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(255,255,255,0.02), transparent 40%);
+  animation:fogMove 30s linear infinite;
 }
 
-/* ===== ボタン高級化 ===== */
-
-#go-btn.ready {
-  background:
-    linear-gradient(
-      135deg,
-      rgba(212,175,106,0.22),
-      rgba(94,55,120,0.28)
-    );
-
-  border-color:
-    rgba(212,175,106,0.5);
-
-  box-shadow:
-    0 4px 18px rgba(94,55,120,0.35);
-
-  transition:
-    transform .2s,
-    box-shadow .3s;
+@keyframes fogMove {
+  from { transform:translateX(0); }
+  to { transform:translateX(-100px); }
 }
-
-#go-btn.ready:hover {
-  transform: scale(1.02);
-}
-
-#go-btn.ready:active {
-  transform: scale(0.98);
-}
-
-/* ===== marker軽量化 ===== */
-
-.q-marker {
-  animation: none !important;
-
-  width: 58px;
-  height: 58px;
-
-  background:
-    radial-gradient(
-      circle at 30% 30%,
-      #f0d49a,
-      #8b6f3a
-    );
-
-  box-shadow:
-    0 0 22px rgba(212,175,106,0.45);
-
-  border:
-    1px solid rgba(255,240,200,0.3);
-}
-
-/* ===== reveal cinematic ===== */
-
-#reveal-modal {
-
-  background:
-    radial-gradient(
-      ellipse at center,
-      rgba(40,20,60,0.45),
-      rgba(10,7,16,0.98)
-    ),
-    rgba(10,7,16,0.98);
-
-  animation:
-    revealFade .7s ease;
-}
-
-@keyframes revealFade {
-  from {
-    opacity:0;
-    transform:scale(1.03);
-  }
-
-  to {
-    opacity:1;
-    transform:scale(1);
-  }
-}
-
-#reveal-name {
-
-  font-size: 34px;
-
-  text-shadow:
-    0 0 20px rgba(212,175,106,0.25);
-}
-
-#reveal-desc {
-
-  background:
-    rgba(20,15,28,0.35);
-
-  border-left:
-    2px solid rgba(212,175,106,0.45);
-}
-
-/* ===== loading text ===== */
-
-#loading-lore {
-  position:absolute;
-
-  top:50%;
-  left:50%;
-
-  transform:translate(-50%, -50%);
-
-  z-index:120;
-
-  font-size:13px;
-  letter-spacing:.25em;
-
-  color:#a8927a;
-
-  opacity:0;
-
-  transition:opacity .5s;
-
-  pointer-events:none;
-}
-
-#loading-lore.show {
-  opacity:1;
-}
-
-/* ===== route glow ===== */
-
-.leaflet-overlay-pane svg path {
-  filter:
-    drop-shadow(0 0 6px rgba(212,175,106,0.25));
-}
-
-/* ===== reveal buttons ===== */
-
-.reveal-btn {
-  transition:
-    background .25s,
-    transform .2s;
-}
-
-.reveal-btn:hover {
-  transform:translateY(-2px);
-}
-
-.reveal-btn.primary {
-
-  background:
-    linear-gradient(
-      135deg,
-      rgba(212,175,106,0.28),
-      rgba(94,55,120,0.32)
-    );
-}
-
 </style>
 
-<!-- ===== loading lore ===== -->
-
-<div id="loading-lore"></div>
-
 <script>
-
-/* =========================
-fetch timeout
-========================= */
-
-async function fetchWithTimeout(
-  url,
-  options = {},
-  timeout = 12000
-) {
-
-  const controller =
-    new AbortController();
-
-  const id = setTimeout(
-    () => controller.abort(),
-    timeout
-  );
+// ===== fetch timeout =====
+async function fetchWithTimeout(url, options = {}, timeout = 12000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
 
   try {
-
     return await fetch(url, {
       ...options,
       signal: controller.signal
     });
-
   } finally {
-
     clearTimeout(id);
   }
 }
 
-/* =========================
-Map Tile 高級化
-========================= */
-
-map.eachLayer(layer => {
-  if (layer instanceof L.TileLayer) {
-    map.removeLayer(layer);
-  }
-});
-
-L.tileLayer(
-  'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-  {
-    attribution:'© Stadia © OSM',
-    maxZoom:20
-  }
-).addTo(map);
-
-/* =========================
-loading lore
-========================= */
-
-const LORE = [
-  '気配を辿っています...',
-  '土地の記憶を掘り起こしています...',
-  '失われた地点を照合中...',
-  '幽かな痕跡を検出...',
-  '古い道筋を探索しています...',
-  '誰かの記憶を受信しています...',
-  '境界の歪みを解析中...',
-  '名も無き地点を探索中...'
-];
-
-function showLore() {
-
-  const el =
-    document.getElementById('loading-lore');
-
-  el.textContent =
-    LORE[
-      Math.floor(Math.random() * LORE.length)
-    ];
-
-  el.classList.add('show');
-}
-
-function hideLore() {
-
-  document
-    .getElementById('loading-lore')
-    .classList.remove('show');
-}
-
-/* =========================
-route layer
-========================= */
-
+// ===== route layer 修正 =====
 let routeLayer = null;
+let routeShadow = null;
 
-/* =========================
-clearRoute
-========================= */
-
+// ===== clearRoute 修正版 =====
 function clearRoute() {
+  if (routeLayer) {
+    map.removeLayer(routeLayer);
+    routeLayer = null;
+  }
 
-  if (!routeLayer) return;
-
-  map.removeLayer(routeLayer);
-
-  routeLayer = null;
+  if (routeShadow) {
+    map.removeLayer(routeShadow);
+    routeShadow = null;
+  }
 }
 
-/* =========================
-drawRoute 軽量版
-========================= */
-
-async function drawRoute(
-  fLat,
-  fLon,
-  tLat,
-  tLon
-) {
-
+// ===== drawRoute 修正版 =====
+async function drawRoute(fLat, fLon, tLat, tLon) {
   const url =
     `${OSRM}/${OSRM_PROFILE[mode]}/${fLon},${fLat};${tLon},${tLat}?overview=full&geometries=geojson`;
 
-  const res =
-    await fetchWithTimeout(url);
+  const res = await fetchWithTimeout(url);
 
-  const data =
-    await res.json();
+  const data = await res.json();
 
-  if (!data.routes?.length) {
-    throw new Error('route');
-  }
+  if (!data.routes?.length) throw new Error('route');
 
   clearRoute();
 
-  routeLayer = L.geoJSON(
-    data.routes[0].geometry,
-    {
-      style: {
-        color:'#d4af6a',
-        weight:4,
-        opacity:.88,
-        lineCap:'round',
-        dashArray:'2, 12'
-      }
+  routeShadow = L.geoJSON(data.routes[0].geometry, {
+    style: {
+      color: '#5e3778',
+      weight: 8,
+      opacity: 0.3
     }
-  ).addTo(map);
+  }).addTo(map);
 
-  map.fitBounds(
-    routeLayer.getBounds(),
-    {
-      padding:[80,80]
+  routeLayer = L.geoJSON(data.routes[0].geometry, {
+    style: {
+      color: '#d4af6a',
+      weight: 3,
+      opacity: 0.85,
+      lineCap: 'round',
+      dashArray: '1, 8'
     }
-  );
+  }).addTo(map);
+
+  map.fitBounds(routeLayer.getBounds(), {
+    padding: [80, 80]
+  });
 }
 
-/* =========================
-marker SVG化
-========================= */
-
-const destIcon = L.divIcon({
-
-  className:'',
-
-  iconSize:[80,80],
-
-  iconAnchor:[40,40],
-
-  html:`
-  <svg width="80" height="80" viewBox="0 0 80 80">
-
-    <circle
-      cx="40"
-      cy="40"
-      r="12"
-      fill="#f0d49a"
-      opacity="0.95"
-    />
-
-    <circle
-      cx="40"
-      cy="40"
-      r="24"
-      stroke="#d4af6a"
-      stroke-width="1"
-      fill="none"
-      opacity="0.4"
-    />
-
-    <circle
-      cx="40"
-      cy="40"
-      r="34"
-      stroke="#d4af6a"
-      stroke-width="0.6"
-      fill="none"
-      opacity="0.18"
-    />
-
-  </svg>
-  `
-});
-
-/* =========================
-smart pan
-========================= */
-
-let lastPan = 0;
-
-function smartPan(lat, lon) {
-
-  const now = Date.now();
-
-  if (now - lastPan < 3000) {
-    return;
-  }
-
-  lastPan = now;
-
-  map.panTo(
-    [lat, lon],
-    {
-      animate:true,
-      duration:1.5
-    }
-  );
-}
-
-/* =========================
-weighted pick 改善
-========================= */
-
+// ===== weightedPick 修正版 =====
 function weightedPick(spots) {
-
   const idealDist = {
-    foot:1200,
-    bike:5000,
-    car:15000
+    foot: 1200,
+    bike: 5000,
+    car: 15000
   }[mode];
 
   const weights = spots.map(s => {
-
     const d = s.distance;
 
     let w = Math.exp(
@@ -462,272 +115,160 @@ function weightedPick(spots) {
       (2 * Math.pow(idealDist * 0.7, 2))
     );
 
-    if (isHorror(s)) {
-      w *= 2.5;
-    }
+    if (isHorror(s)) w *= 2.5;
+    if (isEmotional(s)) w *= 2;
 
-    if (isEmotional(s)) {
-      w *= 2;
-    }
-
-    if (!s.tags?.name) {
-      w *= 1.2;
-    }
+    if (!s.tags?.name) w *= 1.2;
 
     return w;
   });
 
-  const total =
-    weights.reduce((a,b)=>a+b,0);
+  const total = weights.reduce((a,b)=>a+b,0);
 
-  let r =
-    Math.random() * total;
+  let r = Math.random() * total;
 
   for (let i=0;i<spots.length;i++) {
-
     r -= weights[i];
 
-    if (r <= 0) {
-      return spots[i];
-    }
+    if (r <= 0) return spots[i];
   }
 
   return spots[0];
 }
 
-/* =========================
-到着判定改善
-========================= */
-
+// ===== 到着判定改善 =====
 function updateDistBadge(lat, lon) {
-
   if (!spotLat) return;
 
-  const d =
-    haversine(
-      lat,
-      lon,
-      spotLat,
-      spotLon
-    );
+  const d = haversine(lat, lon, spotLat, spotLon);
 
-  document
-    .getElementById('dist-badge')
+  document.getElementById('dist-badge')
     .classList.add('show');
 
-  document
-    .getElementById('dist-num')
+  document.getElementById('dist-num')
     .textContent = fmtDist(d);
 
   const arriveDistance = {
-    foot:70,
-    bike:120,
-    car:250
+    foot: 70,
+    bike: 120,
+    car: 250
   }[mode];
 
-  if (
-    d < arriveDistance &&
-    !arrived
-  ) {
-
+  if (d < arriveDistance && !arrived) {
     arrived = true;
-
     showReveal();
   }
 }
 
-/* =========================
-watchPosition
-========================= */
+// ===== fetchOSM 修正版 =====
+async function fetchOSM(lat, lon, r) {
 
-function startWatchPosition() {
-
-  if (watchId) {
-
-    navigator.geolocation
-      .clearWatch(watchId);
-  }
-
-  watchId =
-    navigator.geolocation.watchPosition(
-
-      p => {
-
-        const lat =
-          p.coords.latitude;
-
-        const lon =
-          p.coords.longitude;
-
-        updateSelf(lat, lon);
-
-        smartPan(lat, lon);
-      },
-
-      null,
-
-      {
-        enableHighAccuracy:
-          mode === 'foot',
-
-        maximumAge:5000,
-
-        timeout:10000
-      }
-    );
-}
-
-/* =========================
-fetchOSM 軽量化
-========================= */
-
-async function fetchOSM(
-  lat,
-  lon,
-  r
-) {
-
-  const q = `
-[out:json][timeout:45];
-
+  const q = `[out:json][timeout:60];
 (
   nwr["historic"](around:${r},${lat},${lon});
 
   nwr["historic"="wayside_shrine"](around:${r},${lat},${lon});
 
   nwr["man_made"~"cross|stele|survey_point"](around:${r},${lat},${lon});
+  nwr["man_made"="memorial"](around:${r},${lat},${lon});
 
   nwr["tourism"~"artwork|viewpoint"](around:${r},${lat},${lon});
 
-  nwr["natural"~"rock|stone|cave_entrance|cliff|spring|peak|arch"](around:${r},${lat},${lon});
+  nwr["natural"~"rock|stone|cave_entrance|cliff|spring|volcano|geyser|sinkhole|peak|arch"](around:${r},${lat},${lon});
+
+  nwr["natural"="tree"]["name"](around:${r},${lat},${lon});
+  nwr["natural"="tree"]["heritage"](around:${r},${lat},${lon});
+  nwr["natural"="tree"]["denotation"](around:${r},${lat},${lon});
+  nwr["natural"="tree"]["circumference"](around:${r},${lat},${lon});
+  nwr["natural"="tree"]["species"](around:${r},${lat},${lon});
+  nwr["natural"="tree"]["genus"](around:${r},${lat},${lon});
 
   nwr["waterway"="waterfall"](around:${r},${lat},${lon});
 
-  nwr["man_made"~"lighthouse|mine_shaft|adit|windmill|watermill"](around:${r},${lat},${lon});
+  nwr["man_made"~"water_tower|chimney|gasometer|lighthouse|mine_shaft|adit|kiln|windmill|watermill|silo"](around:${r},${lat},${lon});
 
   nwr["railway"="abandoned"](around:${r},${lat},${lon});
 
   nwr["abandoned"](around:${r},${lat},${lon});
-
+  nwr["disused"](around:${r},${lat},${lon});
   nwr["ruins"](around:${r},${lat},${lon});
+
+  nwr["amenity"="public_bath"](around:${r},${lat},${lon});
+
+  nwr["shop"~"confectionery|hardware|newsagent|tobacco"](around:${r},${lat},${lon});
+
+  nwr["craft"](around:${r},${lat},${lon});
 
   nwr["landuse"="cemetery"](around:${r},${lat},${lon});
 
-  nwr["place"~"locality|hamlet"](around:${r},${lat},${lon});
+  nwr["place"~"locality|hamlet|isolated_dwelling"](around:${r},${lat},${lon});
 );
-
-out center;
-`;
+out center;`;
 
   for (const server of OVERPASS_SERVERS) {
-
     try {
 
-      const res =
-        await fetchWithTimeout(
-          server,
-          {
-            method:'POST',
-            body:'data=' + encodeURIComponent(q)
-          },
-          15000
-        );
+      const res = await fetchWithTimeout(
+        server,
+        {
+          method: 'POST',
+          body: 'data=' + encodeURIComponent(q)
+        },
+        15000
+      );
 
-      if (!res.ok) {
-        continue;
-      }
+      if (!res.ok) continue;
 
-      const data =
-        await res.json();
+      const data = await res.json();
 
       return (data.elements || [])
-
         .map(e => ({
-
-          lat:
-            e.lat ??
-            e.center?.lat,
-
-          lon:
-            e.lon ??
-            e.center?.lon,
-
-          tags:
-            e.tags || {},
-
-          source:'osm',
-
-          id:'osm-' + e.id
+          lat: e.lat ?? e.center?.lat,
+          lon: e.lon ?? e.center?.lon,
+          tags: e.tags || {},
+          source: 'osm',
+          id: 'osm-' + e.id,
         }))
+        .filter(e => e.lat && e.lon)
+        .filter(e => !isExcluded(e));
 
-        .filter(e =>
-          e.lat &&
-          e.lon
-        )
-
-        .filter(e =>
-          !isExcluded(e)
-        );
-
-    } catch(e) {}
+    } catch (e) {}
   }
 
   return [];
 }
 
-/* =========================
-重複除去
-========================= */
-
+// ===== fetchAllSpots 修正版 =====
 async function fetchAllSpots(lat, lon) {
 
   const r = getRadius();
 
-  const [osm, wd] =
-    await Promise.all([
-      fetchOSM(lat, lon, r),
-      fetchWikidata(lat, lon, r)
-    ]);
+  const [osm, wd] = await Promise.all([
+    fetchOSM(lat, lon, r),
+    fetchWikidata(lat, lon, r)
+  ]);
 
   let all = [...osm, ...wd];
 
   all = all
-
     .map(s => ({
       ...s,
-      distance:
-        haversine(
-          lat,
-          lon,
-          s.lat,
-          s.lon
-        )
+      distance: haversine(lat, lon, s.lat, s.lon)
     }))
+    .filter(s => s.distance > 50)
+    .filter(s => !badReports.includes(s.id))
+    .filter(s => !recentPicks.includes(s.id));
 
-    .filter(s =>
-      s.distance > 50
-    )
-
-    .filter(s =>
-      !badReports.includes(s.id)
-    )
-
-    .filter(s =>
-      !recentPicks.includes(s.id)
-    );
-
+  // ===== 重複除去 =====
   const seen = new Set();
 
   all = all.filter(s => {
 
     const key =
-      Math.round(s.lat * 10000)
-      + ':'
-      + Math.round(s.lon * 10000);
+      Math.round(s.lat * 10000) + ':' +
+      Math.round(s.lon * 10000);
 
-    if (seen.has(key)) {
-      return false;
-    }
+    if (seen.has(key)) return false;
 
     seen.add(key);
 
@@ -735,73 +276,48 @@ async function fetchAllSpots(lat, lon) {
   });
 
   if (horror) {
-
-    all =
-      all.filter(isHorror);
-
+    all = all.filter(isHorror);
   } else if (emotion) {
-
-    all =
-      all.filter(isEmotional);
+    all = all.filter(isEmotional);
   }
 
   return all;
 }
 
-/* =========================
-go patch
-========================= */
+// ===== watchPosition 修正版 =====
+function startWatchPosition() {
 
-const originalGo = go;
-
-go = async function() {
-
-  showLore();
-
-  try {
-
-    await originalGo();
-
-  } finally {
-
-    hideLore();
+  if (watchId) {
+    navigator.geolocation.clearWatch(watchId);
   }
 
-  if (spotLat && spotLon) {
+  watchId = navigator.geolocation.watchPosition(
+    p => {
 
-    map.flyTo(
-      [spotLat, spotLon],
-      16,
-      {
-        duration:4
-      }
-    );
+      updateSelf(
+        p.coords.latitude,
+        p.coords.longitude
+      );
 
-    setTimeout(() => {
-
-      if (destMarker) {
-
-        destMarker.setOpacity(0);
-
-        let opacity = 0;
-
-        const fade = setInterval(() => {
-
-          opacity += 0.08;
-
-          destMarker.setOpacity(opacity);
-
-          if (opacity >= 1) {
-            clearInterval(fade);
-          }
-
-        }, 30);
+      if (
+        !map.getBounds().contains([
+          p.coords.latitude,
+          p.coords.longitude
+        ])
+      ) {
+        map.panTo([
+          p.coords.latitude,
+          p.coords.longitude
+        ]);
       }
 
-    }, 1200);
-  }
-
-  startWatchPosition();
-};
-
+    },
+    null,
+    {
+      enableHighAccuracy: mode === 'foot',
+      maximumAge: 5000,
+      timeout: 10000
+    }
+  );
+}
 </script>
