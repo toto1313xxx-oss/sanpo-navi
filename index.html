@@ -11,20 +11,13 @@
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; overflow: hidden; background: #050307; color: #e8d9b8; font-family: 'Shippori Mincho', serif; }
 
-/* ===== 空間演出レイヤー（超軽量・GPU駆動） ===== */
-#map { position: absolute; inset: 0; filter: brightness(0.65) contrast(1.1); z-index: 0; }
+/* ===== 空間演出レイヤー（CSSフィルター完全排除・GPU駆動） ===== */
+#map { position: absolute; inset: 0; z-index: 0; background: #09060f; }
+.vignette { position: absolute; inset: 0; pointer-events: none; z-index: 2; background: radial-gradient(circle, transparent 30%, rgba(5,3,7,0.85) 100%); }
+.ambient-glow { position: absolute; inset: 0; pointer-events: none; z-index: 1; background: radial-gradient(circle at 80% 20%, rgba(94,55,120,0.22), transparent 45%), radial-gradient(circle at 10% 80%, rgba(212,175,106,0.15), transparent 50%); will-change: transform; animation: ambientSwing 25s ease-in-out infinite alternate; }
+@keyframes ambientSwing { 0% { transform: scale(1); } 100% { transform: scale(1.12) translate(8px, -8px); } }
+.scanlines { position: absolute; inset: 0; pointer-events: none; z-index: 3; background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.35) 50%), linear-gradient(90deg, rgba(255,0,0,0.02), rgba(0,255,0,0.01), rgba(0,0,255,0.02)); background-size: 100% 4px, 6px 100%; opacity: 0.6; }
 
-/* 全体のトーンを落とす周辺減光（ビネット） */
-.vignette { position: absolute; inset: 0; pointer-events: none; z-index: 2; background: radial-gradient(circle, transparent 40%, rgba(5,3,7,0.7) 100%); }
-
-/* 妖しい光の霧（重いフィルターを使わず、低負荷なグラデーションの重なりで表現） */
-.ambient-glow { position: absolute; inset: 0; pointer-events: none; z-index: 1; background: radial-gradient(circle at 80% 20%, rgba(94,55,120,0.2), transparent 40%), radial-gradient(circle at 10% 80%, rgba(212,175,106,0.12), transparent 45%); will-change: transform; animation: ambientSwing 20s ease-in-out infinite alternate; }
-@keyframes ambientSwing { 0% { transform: scale(1); } 100% { transform: scale(1.08) translate(10px, -10px); } }
-
-/* 液晶の走査線風エフェクト */
-.scanlines { position: absolute; inset: 0; pointer-events: none; z-index: 3; background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%), linear-gradient(90deg, rgba(255,0,0,0.03), rgba(0,255,0,0.01), rgba(0,0,255,0.03)); background-size: 100% 4px, 6px 100%; opacity: 0.4; }
-
-/* 厳選された15個の微粒子 */
 #particles { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
 .particle { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #d4af6a; box-shadow: 0 0 8px #d4af6a; animation: floatUp linear infinite; will-change: transform; }
 @keyframes floatUp {
@@ -34,12 +27,12 @@ html, body { height: 100%; overflow: hidden; background: #050307; color: #e8d9b8
   to { transform: translateY(-5vh) scale(1.2); opacity: 0; }
 }
 
-/* ===== 各種高品位UIコンポーネント ===== */
-#top-overlay { position: absolute; top: 0; left: 0; right: 0; padding: 48px 24px 28px; background: linear-gradient(to bottom, #050307 50%, rgba(5,3,7,0.8) 75%, transparent); z-index: 100; pointer-events: none; }
+/* ===== 重厚感のあるUIデザイン ===== */
+#top-overlay { position: absolute; top: 0; left: 0; right: 0; padding: 48px 24px 28px; background: linear-gradient(to bottom, #050307 40%, rgba(5,3,7,0.7) 75%, transparent); z-index: 100; pointer-events: none; }
 #brand-jp { font-size: 28px; font-weight: 800; letter-spacing: 0.35em; color: transparent; background: linear-gradient(135deg, #f3e5c8, #d4af6a 40%, #8b6f3a); -webkit-background-clip: text; background-clip: text; text-shadow: 0 0 15px rgba(212,175,106,0.25); }
 #tagline { font-size: 10px; color: #7a6985; margin-top: 6px; letter-spacing: 0.15em; font-style: italic; text-shadow: 1px 1px 2px #000; }
 
-#mode-bar { position: absolute; top: 115px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; gap: 6px; background: rgba(12,9,18,0.8); border: 1px solid rgba(212,175,106,0.3); border-radius: 24px; padding: 5px 8px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.05); }
+#mode-bar { position: absolute; top: 115px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; gap: 6px; background: rgba(12,9,18,0.85); border: 1px solid rgba(212,175,106,0.35); border-radius: 24px; padding: 5px 8px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 8px 32px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.05); }
 .mode-btn { width: 38px; height: 38px; border-radius: 50%; border: none; background: transparent; color: #5a4a60; font-size: 16px; cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; align-items: center; justify-content: center; }
 .mode-btn.active { background: linear-gradient(135deg, rgba(212,175,106,0.2), rgba(94,55,120,0.25)); color: #d4af6a; border: 1px solid rgba(212,175,106,0.4); box-shadow: 0 0 10px rgba(212,175,106,0.2); transform: scale(1.08); }
 
@@ -57,16 +50,17 @@ html, body { height: 100%; overflow: hidden; background: #050307; color: #e8d9b8
 #go-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 #error-msg { display: none; font-size: 11px; color: #c89090; margin-bottom: 12px; padding: 10px; background: rgba(40,10,20,0.6); border: 1px solid rgba(180,80,80,0.4); border-radius: 8px; text-align: center; }
 
-/* ===== REVEAL MODAL（全画面ドラマチック演出） ===== */
-#reveal-modal { display: none; position: absolute; inset: 0; z-index: 300; background: radial-gradient(circle at center, #150f22 0%, #050307 100%); flex-direction: column; align-items: center; justify-content: center; padding: 32px; text-align: center; opacity: 0; transition: opacity 0.5s ease; }
+/* ===== 劇的な REVEAL MODAL ===== */
+#reveal-modal { display: none; position: absolute; inset: 0; z-index: 300; background: radial-gradient(circle at center, #11091c 0%, #040206 100%); flex-direction: column; align-items: center; justify-content: center; padding: 28px; text-align: center; opacity: 0; transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
 #reveal-modal.show { display: flex; opacity: 1; }
-#reveal-icon { font-size: 72px; margin-bottom: 20px; filter: drop-shadow(0 0 15px rgba(212,175,106,0.6)); }
-#reveal-name { font-size: 26px; font-weight: 800; color: transparent; background: linear-gradient(135deg, #fff, #d4af6a); -webkit-background-clip: text; background-clip: text; margin-bottom: 10px; letter-spacing: 0.05em; line-height: 1.4; }
-#reveal-cat { font-size: 11px; color: #8b7355; margin-bottom: 20px; letter-spacing: 0.2em; border: 1px solid rgba(139,115,85,0.3); padding: 2px 12px; border-radius: 10px; background: rgba(139,115,85,0.05); }
-#reveal-desc { font-size: 13px; color: #bcaaa4; line-height: 1.8; margin-bottom: 32px; max-width: 290px; text-shadow: 1px 1px 1px #000; }
-#reveal-actions { display: flex; gap: 12px; width: 100%; max-width: 290px; }
-.reveal-btn { flex: 1; padding: 13px 0; border-radius: 12px; border: 1px solid rgba(139,115,85,0.5); background: rgba(5,3,7,0.5); color: #a8927a; font-size: 13px; font-family: inherit; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; }
-.reveal-btn.primary { background: linear-gradient(135deg, rgba(212,175,106,0.25), rgba(94,55,120,0.25)); color: #f0d49a; border-color: #d4af6a; box-shadow: 0 4px 15px rgba(212,175,106,0.15); }
+#reveal-icon { font-size: 64px; margin-bottom: 16px; filter: drop-shadow(0 0 20px rgba(212,175,106,0.5)); animation: floatGlow 3s ease-in-out infinite; }
+@keyframes floatGlow { 0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 15px rgba(212,175,106,0.4)); } 50% { transform: translateY(-6px); filter: drop-shadow(0 0 25px rgba(94,55,120,0.7)); } }
+#reveal-name { font-size: 24px; font-weight: 800; color: transparent; background: linear-gradient(135deg, #fff, #f6e3be 40%, #d4af6a); -webkit-background-clip: text; background-clip: text; margin-bottom: 8px; letter-spacing: 0.08em; line-height: 1.4; text-shadow: 0 0 20px rgba(255,255,255,0.1); }
+#reveal-cat { font-size: 10px; color: #d4af6a; margin-bottom: 24px; letter-spacing: 0.25em; border: 1px solid rgba(212,175,106,0.4); padding: 3px 16px; border-radius: 20px; background: rgba(12,9,18,0.6); box-shadow: inset 0 0 8px rgba(94,55,120,0.4); }
+#reveal-desc { font-size: 13px; color: #c4b5cb; line-height: 1.9; margin-bottom: 36px; max-width: 300px; text-align: left; text-indent: 1em; padding: 16px; background: rgba(5,3,7,0.4); border-radius: 12px; border: 1px solid rgba(212,175,106,0.15); box-shadow: inset 0 0 20px rgba(0,0,0,0.6); }
+#reveal-actions { display: flex; gap: 12px; width: 100%; max-width: 300px; }
+.reveal-btn { flex: 1; padding: 14px 0; border-radius: 12px; border: 1px solid rgba(212,175,106,0.3); background: rgba(12,9,18,0.7); color: #8d7b94; font-size: 13px; font-family: inherit; font-weight: 600; letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; }
+.reveal-btn.primary { background: linear-gradient(135deg, rgba(212,175,106,0.25), rgba(94,55,120,0.25)); color: #f0d49a; border-color: #d4af6a; box-shadow: 0 4px 15px rgba(212,175,106,0.2); }
 
 /* ===== 妖しく脈打つマップピン ===== */
 .q-marker { width: 34px; height: 34px; background: radial-gradient(circle at 35% 35%, #ecdbb5, #8b6f3a); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; position: relative; }
@@ -74,7 +68,6 @@ html, body { height: 100%; overflow: hidden; background: #050307; color: #e8d9b8
 @keyframes pinPulse { from { transform: scale(0.6); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
 .q-marker-inner { transform: rotate(45deg); font-size: 14px; font-weight: 800; color: #050307; }
 
-/* 読み込みスピナー */
 .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(212,175,106,0.2); border-top-color: #d4af6a; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: -2px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
@@ -135,15 +128,35 @@ const OVERPASS_SERVERS = ['https://overpass-api.de/api/interpreter', 'https://ov
 const MODE_RADIUS = { foot: 1500, bike: 4000, car: 12000 };
 const OSRM_PROFILE = { foot: 'foot', bike: 'bike', car: 'driving' };
 
-const HORROR_KEYWORDS = /血|鬼|呪|死|首|怨|霊|怪|妖|幽|地獄|供養|処刑|刑場|無縁|殉難|墓|塚|事故|心霊/;
-const EMOTION_KEYWORDS = /民話|伝説|文学|物語|信仰|聖地|遺跡|名木|巨木|奇岩|滝|湧水|名水|古道|旧道|城跡/;
+// 拡張されたキーワード群
+const HORROR_KEYWORDS = /血|鬼|呪|死|首|怨|霊|怪|妖|幽|地獄|供養|処刑|刑場|無縁|殉難|墓|塚|事故|心霊|骨|闇|魔|隠|仏|寺/;
+const EMOTION_KEYWORDS = /民話|伝説|文学|物語|信仰|聖地|遺跡|名木|巨木|奇岩|滝|湧水|名水|古道|旧道|城跡|跡|庵|碑|灯籠|橋|辨財天|弁天/;
+
+// ストーリーテリング用フレーズデータベース
+const STORIES = {
+  horror: [
+     "地元の古老さえ口を閉ざす、地図から半分消されたかのような境界。陽が落ちてからここに長居した者は、枕元に立つ「濡れた影」にうなされるという。",
+     "かつて大きな戦、あるいは恐ろしい野ざらしの果てに、無数の無縁仏が埋められたと伝わる土壌。耳を澄ますと、風の音に混じって現世を呪うような囁きが聞こえる。",
+     "古い記録には『不入の地』と記された、霊脈が激しくねじ曲がった特異点。古くから奇妙な神隠しや、説明のつかない辻斬りが多発したと噂される路地裏。",
+     "此処に遺された石造物の裏には、削り取られた古い呪詛の文字が眠る。興味本位で足を踏み入れた者は、帰路で必ず『数が増えている足音』を聴くことになる。"
+  ],
+  emotion: [
+     "数百年もの間、旅人たちを見守り、あるいはその涙を吸い込んできた静謐なる古跡。都会の喧騒のすぐ裏で、ここだけが時の流れから完全に置き去りにされている。",
+     "古き時代の詩人や異端の信仰者たちが、人目を忍んで集ったとされる祈りの残滓。空気はどこか冷たくも優しく、今なお目に見えない古い約束が生きている気配がする。",
+     "名もなき旅人が行き倒れ、その魂を慰めるために路傍にそっと建てられた小さな標。かつてここを通った数千人の足跡が、目に見えない幾何学模様となって地面に刻まれている。",
+     "夜露に濡れた苔の下に、歴史の教科書には決して載らない市井の民のささやかな願いが眠る場所。目を閉じると、遥か昔の誰かの祈りの唄が、胸の奥に静かに響き渡る。"
+  ],
+  default: [
+     "現世の合理的な開発から奇跡的にこぼれ落ちた、時間線の空白地帯。かつてここに何があったのか、それを知る術は失われているが、土地の記憶だけが確かに息づいている。",
+     "都市の血管の隙間に潜む、静かなる隠れ里。訪れる者の心の歪みに応じて、この場所は優しくも、時に冷酷な顔を見せるという。辿り着いた事自体が、一つの奇縁である。"
+  ]
+};
 
 let mode = 'foot', emotion = false, horror = false;
 let recentPicks = [], badReports = [];
 let userLat, userLon, spotLat, spotLon, chosenSpot = null;
 let routeLayer = null, selfMarker = null, destMarker = null, watchId = null;
 
-// マップ初期化（広域高負荷フィルター全削除）
 const map = L.map('map', { zoomControl: false, fadeAnimation: false }).setView([35.6812, 139.7671], 14);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
   subdomains: 'abcd', maxZoom: 18
@@ -166,19 +179,45 @@ function haversine(lat1, lon1, lat2, lon2) {
   return Math.round(R*2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 }
 
+// 検索結果の「深み」を動的に演出するコアルーチン
 function getDetails(s) {
   const t = s.tags || {};
   const name = s.name || t.name || t['name:ja'] || '名無き遺構';
-  let icon = '📍', cat = '隠れた古跡';
-
-  if (HORROR_KEYWORDS.test(name)) { icon = '👻'; cat = '怪異伝承の地'; }
-  else if (t.historic === 'wayside_shrine') { icon = '🪦'; cat = '路傍の石仏・祠'; }
-  else if (t.historic === 'castle') { icon = '🏯'; cat = '古城・砦跡'; }
-  else if (t.natural === 'tree') { icon = '🌳'; cat = '老木・名木'; }
-  else if (t.waterway === 'waterfall') { icon = '🏞️'; cat = '秘められた名瀑'; }
-  else if (t.amenity === 'place_of_worship') { icon = '⛩️'; cat = '由緒ある社寺'; }
   
-  return { name, icon, cat, desc: s.desc || t.description || t.note || 'この地に眠る詳細な歴史や伝承は謎に包まれている。' };
+  let icon = '📍';
+  let cat = '隠れた古跡';
+  let modeKey = 'default';
+
+  // 1. カテゴリとアイコンの厳密なマッピング
+  if (HORROR_KEYWORDS.test(name) || t.historic === 'tomb' || t.amenity === 'grave_yard') {
+    icon = '👻'; cat = '怪異伝承の地'; modeKey = 'horror';
+  } else if (t.historic === 'wayside_shrine' || t.historic === 'wayside_cross') {
+    icon = '🪦'; cat = '路傍の石仏・祠'; modeKey = emotion ? 'emotion' : (horror ? 'horror' : 'default');
+  } else if (t.historic === 'castle' || t.historic === 'fortress') {
+    icon = '🏯'; cat = '古城・砦の残滓'; modeKey = 'emotion';
+  } else if (t.natural === 'tree' || t.natural === 'stone') {
+    icon = '🌳'; cat = '老木・霊石の境界'; modeKey = 'emotion';
+  } else if (t.waterway === 'waterfall' || t.natural === 'spring') {
+    icon = '🏞️'; cat = '秘められた名瀑・湧水'; modeKey = 'emotion';
+  } else if (t.amenity === 'place_of_worship') {
+    icon = '⛩️'; cat = '由緒ある社寺の影'; modeKey = emotion ? 'emotion' : 'default';
+  } else if (EMOTION_KEYWORDS.test(name) || t.historic) {
+    icon = '✨'; cat = '詩情あふれる古跡'; modeKey = 'emotion';
+  }
+
+  // 2. 現在の選択モードによる上書き判定
+  if (horror) { icon = '👻'; cat = '境界線上の怪異'; modeKey = 'horror'; }
+  else if (emotion) { icon = '✨'; cat = '時の止まった静寂'; modeKey = 'emotion'; }
+
+  // 3. IDから決定論的なストーリーインデックスを抽出して割り当て
+  const hash = s.id ? s.id.split('-')[1] || 0 : 0;
+  const arr = STORIES[modeKey] || STORIES['default'];
+  const baseDesc = arr[parseInt(hash) % arr.length];
+  
+  // タグ情報があれば少し補足
+  const subInfo = t.description ? `\n（現世の記録: ${t.description}）` : '';
+
+  return { name, icon, cat, desc: baseDesc + subInfo };
 }
 
 function showError(msg) { const e = document.getElementById('error-msg'); e.textContent = msg; e.style.display = 'block'; }
@@ -196,6 +235,7 @@ function checkArrival(lat, lon) {
   document.getElementById('dist-badge').classList.add('show');
   document.getElementById('dist-num').textContent = d < 1000 ? d + 'm' : (d/1000).toFixed(1) + 'km';
   
+  // 40メートル以内で「発見（Reveal）」
   if (d <= 40) {
     if (watchId) navigator.geolocation.clearWatch(watchId);
     const details = getDetails(chosenSpot);
@@ -219,13 +259,13 @@ function updateLocation(lat, lon) {
 }
 
 async function fetchSpots(lat, lon) {
-  const r = horror ? (mode === 'foot' ? 4000 : 15000) : MODE_RADIUS[mode];
+  const r = horror ? (mode === 'foot' ? 3500 : 12000) : MODE_RADIUS[mode];
   const opaq = `[out:json][timeout:30];(
     node["historic"](around:${r},${lat},${lon});
-    node["amenity"="place_of_worship"](around:${r},${lat},${lon});
-    node["natural"~"rock|stone|cave_entrance|spring"](around:${r},${lat},${lon});
+    node["amenity"~"place_of_worship|grave_yard"](around:${r},${lat},${lon});
+    node["natural"~"rock|stone|cave_entrance|spring|tree"](around:${r},${lat},${lon});
     node["waterway"="waterfall"](around:${r},${lat},${lon});
-    node["railway"="abandoned"](around:${r},${lat},${lon});
+    node["railway"~"abandoned|disused"](around:${r},${lat},${lon});
   );out center;`;
 
   for (const server of OVERPASS_SERVERS) {
@@ -256,13 +296,23 @@ async function startJourney() {
     let list = await fetchSpots(userLat, userLon);
     list = list.filter(s => !badReports.includes(s.id) && !recentPicks.includes(s.id));
     
-    if (horror) list = list.filter(s => HORROR_KEYWORDS.test(s.tags.name || ''));
-    else if (emotion) list = list.filter(s => EMOTION_KEYWORDS.test(s.tags.name || '') || s.tags.historic);
+    // 拡張フィルタリング判定
+    if (horror) {
+      list = list.filter(s => HORROR_KEYWORDS.test(s.tags.name || '') || s.tags.amenity === 'grave_yard');
+    } else if (emotion) {
+      list = list.filter(s => EMOTION_KEYWORDS.test(s.tags.name || '') || s.tags.historic);
+    }
 
-    if (!list.length) { showError('この領域に新たな「幽路」は交差していません'); setBtnState(false, 'どこか連れてって'); return; }
+    if (!list.length) { 
+      showError('この領域に新たな「幽路」は交差していません（条件を少し緩めるか、移動してください）'); 
+      setBtnState(false, 'どこか連れてって'); 
+      return; 
+    }
 
     list.forEach(s => s.dist = haversine(userLat, userLon, s.lat, s.lon));
     list.sort((a,b) => a.dist - b.dist);
+    
+    // 近すぎず遠すぎない、かつある程度ランダムな上位5件からチョイス
     chosenSpot = list[Math.floor(Math.random() * Math.min(list.length, 5))];
     
     spotLat = chosenSpot.lat; spotLon = chosenSpot.lon;
@@ -311,7 +361,6 @@ function resetUI() {
   setBtnState(false, 'どこか連れてって');
 }
 
-// 各種イベント紐付け
 document.getElementById('go-btn').addEventListener('click', startJourney);
 document.getElementById('reveal-again').addEventListener('click', resetUI);
 document.getElementById('reveal-bad').addEventListener('click', () => { if (chosenSpot) badReports.push(chosenSpot.id); resetUI(); });
@@ -329,7 +378,6 @@ function updateFilters() {
   document.getElementById('horror-btn').classList.toggle('active', horror);
 }
 
-// 負荷ゼロの軽量アニメーション粒子を生成
 window.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('particles');
   for (let i = 0; i < 15; i++) {
