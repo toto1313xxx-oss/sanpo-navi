@@ -416,7 +416,7 @@ let mode = 'foot';
 let mania = false;
 let emotion = false;
 let horror = false;
-let recentPicks = []; // 連続防止用
+let recentPicks = JSON.parse(localStorage.getItem('recentPicks') || '[]');
 let userLat, userLon;
 let spotLat, spotLon, spotTags, spotName, spotDesc, spotSource;
 let spots = [], chosen = null;
@@ -692,7 +692,22 @@ function isExcluded(s) {
   return false;
 }
 
-// Wikipedia GeoSearch
+// Wikipedia/Wikidataの除外キーワード
+function isExcludedByName(name, desc) {
+  const text = (name || '') + ' ' + (desc || '');
+  // 学校・公共機関・駅・商業施設
+  if (/小学校|中学校|高等学校|大学|専門学校|高校$|学園|学院|幼稚園|保育園|保育所/.test(name || '')) return true;
+  if (/駅$|停留所|バスターミナル|空港|港$|料金所|IC$|インターチェンジ|ジャンクション/.test(name || '')) return true;
+  if (/役所|市役所|町役場|区役所|県庁|庁舎|警察署|消防署|郵便局|裁判所|刑務所|拘置所/.test(name || '')) return true;
+  if (/図書館|公民館|体育館|文化センター|福祉センター|保健所/.test(name || '')) return true;
+  if (/病院|医院|クリニック|診療所|歯科/.test(name || '')) return true;
+  if (/銀行|信用金庫|JA$|農協/.test(name || '')) return true;
+  if (/スーパー|ホームセンター|ショッピング|デパート|百貨店|アウトレット/.test(name || '')) return true;
+  if (/ホテル|旅館|ビジネスホテル/.test(name || '')) return true;
+  // 説明文ベース
+  if (/^(小学校|中学校|高等学校|大学|駅|郵便局|警察署|消防署|病院|銀行)/.test(desc || '')) return true;
+  return false;
+}
 async function fetchWikipedia(lat, lon, r) {
   try {
     const controller = new AbortController();
@@ -701,14 +716,16 @@ async function fetchWikipedia(lat, lon, r) {
     const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timer);
     const data = await res.json();
-    return (data.query?.geosearch || []).map(p => ({
-      lat: p.lat, lon: p.lon,
-      tags: { name: p.title },
-      source: 'wikipedia',
-      name: p.title,
-      pageid: p.pageid,
-      id: 'wp-' + p.pageid,
-    }));
+    return (data.query?.geosearch || [])
+      .filter(p => !isExcludedByName(p.title, ''))
+      .map(p => ({
+        lat: p.lat, lon: p.lon,
+        tags: { name: p.title },
+        source: 'wikipedia',
+        name: p.title,
+        pageid: p.pageid,
+        id: 'wp-' + p.pageid,
+      }));
   } catch (e) { return []; }
 }
 
@@ -749,13 +766,15 @@ LIMIT 40`;
     return (data.results?.bindings || []).map(b => {
       const m = b.coord.value.match(/Point\(([-\d.]+) ([-\d.]+)\)/);
       if (!m) return null;
+      const name = b.itemLabel?.value;
       const desc = b.desc?.value || '';
+      if (isExcludedByName(name, desc)) return null;
       const isEmotional = /民話|伝説|妖怪|文学|物語|霊|怪|塚|古墳|信仰|聖地|遺跡|心霊|怨/.test(desc);
       return {
         lat: parseFloat(m[2]), lon: parseFloat(m[1]),
-        tags: { name: b.itemLabel?.value },
+        tags: { name },
         source: 'wikidata',
-        name: b.itemLabel?.value,
+        name,
         desc,
         emotional: isEmotional,
         id: 'wd-' + b.item.value,
@@ -910,15 +929,18 @@ async function fetchAllSpots(lat, lon) {
 
 // マイナー優先 & 感動優先 & 遠距離優先の重み付け選択
 function weightedPick(spots) {
-  const minRadius = mode === 'foot' ? 200 : mode === 'bike' ? 1000 : 5000;
+  // モード別の最小距離（これ以下は重み激減）
+  const minDist = mode === 'foot' ? 100 : mode === 'bike' ? 1500 : 7000;
+  const idealDist = mode === 'foot' ? 800 : mode === 'bike' ? 3000 : 12000;
+
   const weights = spots.map(s => {
     let w = 1.0;
-    // 車・チャリは近すぎを減らす
-    if (s.distance < minRadius) w *= 0.2;
-    // 車モードは遠いほど有利
-    if (mode === 'car') w *= Math.min(s.distance / 5000, 3);
-    // チャリも適度に遠めを優先
-    if (mode === 'bike') w *= Math.min(s.distance / 2000, 2);
+    // 最小距離以下は強くペナルティ
+    if (s.distance < minDist) w *= 0.05;
+    // 理想距離に近いほど有利（ガウシアン的）
+    const ratio = s.distance / idealDist;
+    if (ratio < 1) w *= ratio; // 短すぎはダメ
+    else w *= 1.0 / (1 + (ratio - 1) * 0.5); // 長すぎも少し減
 
     if (isHorror(s)) w *= horror ? 5 : 1;
     if (isEmotional(s)) w *= 4;
@@ -1002,7 +1024,8 @@ async function go() {
   spots = elements;
   const pick = weightedPick(spots);
   recentPicks.push(pick.id);
-  if (recentPicks.length > 5) recentPicks.shift();
+  if (recentPicks.length > 30) recentPicks.shift();
+  localStorage.setItem('recentPicks', JSON.stringify(recentPicks));
   chosen = pick;
   spotLat = pick.lat; spotLon = pick.lon; spotTags = pick.tags;
   spotName = pick.name; spotDesc = pick.desc; spotSource = pick.source;
