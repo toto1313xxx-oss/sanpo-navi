@@ -9,6 +9,220 @@
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+/* ===== ULTRA UI ===== */
+
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:2;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(120,70,180,.12), transparent 30%),
+    radial-gradient(circle at 80% 60%, rgba(212,175,106,.08), transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(80,40,120,.15), transparent 50%);
+  mix-blend-mode:screen;
+  animation:bgFloat 18s ease-in-out infinite alternate;
+}
+
+@keyframes bgFloat{
+  0%{transform:translateY(0px) scale(1);}
+  100%{transform:translateY(-20px) scale(1.05);}
+}
+
+/* ガラス感 */
+#mode-bar,
+#dist-badge,
+#debug-panel,
+#bottom,
+#reveal-desc{
+  backdrop-filter:blur(24px) saturate(140%);
+  -webkit-backdrop-filter:blur(24px) saturate(140%);
+}
+
+/* ブランド発光 */
+#brand-jp{
+  animation:goldGlow 4s ease-in-out infinite alternate;
+}
+
+@keyframes goldGlow{
+  0%{
+    text-shadow:
+      0 0 10px rgba(212,175,106,.2),
+      0 0 30px rgba(212,175,106,.15);
+  }
+  100%{
+    text-shadow:
+      0 0 20px rgba(212,175,106,.5),
+      0 0 60px rgba(212,175,106,.3);
+  }
+}
+
+/* ボタン超強化 */
+.mode-btn{
+  position:relative;
+  overflow:hidden;
+}
+
+.mode-btn::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,255,255,.12),
+    transparent
+  );
+  transform:translateX(-120%);
+}
+
+.mode-btn:active::before{
+  animation:shine .7s ease;
+}
+
+@keyframes shine{
+  to{transform:translateX(120%);}
+}
+
+.mode-btn.active{
+  transform:translateY(-2px) scale(1.05);
+}
+
+/* GOボタン進化 */
+#go-btn.ready{
+  position:relative;
+  overflow:hidden;
+}
+
+#go-btn.ready::before{
+  content:'';
+  position:absolute;
+  top:-50%;
+  left:-50%;
+  width:200%;
+  height:200%;
+  background:
+    conic-gradient(
+      from 0deg,
+      transparent,
+      rgba(212,175,106,.25),
+      transparent
+    );
+  animation:rotateAura 5s linear infinite;
+}
+
+#go-btn.ready::after{
+  content:'';
+  position:absolute;
+  inset:1px;
+  border-radius:15px;
+  background:linear-gradient(135deg,#1b1224,#140d1d);
+}
+
+#go-btn.ready span,
+#go-btn.ready{
+  position:relative;
+  z-index:2;
+}
+
+@keyframes rotateAura{
+  to{transform:rotate(360deg);}
+}
+
+/* マーカー進化 */
+.q-marker{
+  animation:
+    markerPulse 2.5s ease-in-out infinite,
+    markerFloat 4s ease-in-out infinite;
+}
+
+.q-marker::after{
+  content:'';
+  position:absolute;
+  inset:-12px;
+  border-radius:50%;
+  border:1px solid rgba(212,175,106,.25);
+  animation:ring 2s linear infinite;
+}
+
+@keyframes ring{
+  0%{
+    transform:scale(.8);
+    opacity:.8;
+  }
+  100%{
+    transform:scale(1.6);
+    opacity:0;
+  }
+}
+
+@keyframes markerFloat{
+  0%,100%{ transform:rotate(-45deg) translateY(0px);}
+  50%{ transform:rotate(-45deg) translateY(-8px);}
+}
+
+/* revealモーダル強化 */
+#reveal-modal{
+  overflow:hidden;
+}
+
+#reveal-modal::before{
+  content:'';
+  position:absolute;
+  inset:-50%;
+  background:
+    radial-gradient(circle, rgba(212,175,106,.08), transparent 30%);
+  animation:revealRotate 25s linear infinite;
+}
+
+@keyframes revealRotate{
+  to{transform:rotate(360deg);}
+}
+
+#reveal-name{
+  animation:textReveal 1s ease;
+}
+
+@keyframes textReveal{
+  from{
+    opacity:0;
+    transform:translateY(20px);
+    letter-spacing:.4em;
+    filter:blur(10px);
+  }
+  to{
+    opacity:1;
+    transform:none;
+    letter-spacing:0;
+    filter:none;
+  }
+}
+
+/* 地図周囲暗転 */
+#map::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at center,
+      transparent 45%,
+      rgba(0,0,0,.35) 100%);
+}
+
+/* 距離表示 */
+#dist-num{
+  text-shadow:
+    0 0 20px rgba(212,175,106,.5),
+    0 0 40px rgba(212,175,106,.2);
+}
+
+/* iPhoneぬるぬる */
+*{
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; overflow: hidden; background: #0a0710; color: #e8d9b8; font-family: 'Shippori Mincho', serif; }
