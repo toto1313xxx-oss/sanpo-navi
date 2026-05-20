@@ -6,291 +6,109 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>幽路 — yuro</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;700;800&family=Noto+Serif+JP:wght@300;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; overflow: hidden; background: #0a0710; color: #e8d9b8; font-family: 'Shippori Mincho', 'Noto Serif JP', serif; }
-
-/* 地図 */
-#map {
-  position: absolute; inset: 0;
-  filter: brightness(0.75) contrast(1.1) hue-rotate(-15deg);
-  z-index: 0;
-}
-.leaflet-control-attribution {
-  font-size: 8px !important; background: rgba(10,7,16,0.5) !important;
-  color: #3a3040 !important; font-family: sans-serif !important;
-}
+html, body { height: 100%; overflow: hidden; background: #0a0710; color: #e8d9b8; font-family: 'Shippori Mincho', serif; }
+#map { position: absolute; inset: 0; filter: brightness(0.75) contrast(1.1) hue-rotate(-15deg); z-index: 0; }
+.leaflet-control-attribution { font-size: 8px !important; background: rgba(10,7,16,0.5) !important; color: #3a3040 !important; }
 .leaflet-control-attribution a { color: #5a4a60 !important; }
-.leaflet-control-zoom {
-  border: none !important;
-  background: rgba(10,7,16,0.8) !important;
-  margin-bottom: 130px !important;
-}
-.leaflet-control-zoom a {
-  background: transparent !important;
-  color: #8b7355 !important;
-  border-bottom: 1px solid rgba(139,115,85,0.2) !important;
-  font-family: serif !important;
-}
+.leaflet-control-zoom { border: none !important; background: rgba(10,7,16,0.8) !important; margin-bottom: 130px !important; }
+.leaflet-control-zoom a { background: transparent !important; color: #8b7355 !important; border-bottom: 1px solid rgba(139,115,85,0.2) !important; }
 
-/* オーバーレイ：上部 */
-#top-overlay {
-  position: absolute; top: 0; left: 0; right: 0;
-  padding: 52px 20px 24px;
-  background: linear-gradient(to bottom, rgba(10,7,16,0.92) 50%, transparent);
-  z-index: 100; pointer-events: none;
-}
-#brand {
-  display: flex; align-items: baseline; gap: 14px;
-}
-#brand-jp {
-  font-size: 28px; font-weight: 800; letter-spacing: 0.3em;
-  color: transparent;
-  background: linear-gradient(135deg, #d4af6a 0%, #8b6f3a 50%, #d4af6a 100%);
-  -webkit-background-clip: text; background-clip: text;
-  text-shadow: 0 0 20px rgba(212,175,106,0.3);
-}
-#brand-en {
-  font-size: 10px; color: #5a4a60; letter-spacing: 0.4em;
-  font-family: sans-serif; text-transform: uppercase;
-}
-#tagline {
-  font-size: 11px; color: #6a5a70; margin-top: 8px;
-  letter-spacing: 0.15em; font-style: italic;
-}
+#top-overlay { position: absolute; top: 0; left: 0; right: 0; padding: 52px 20px 24px;
+  background: linear-gradient(to bottom, rgba(10,7,16,0.92) 50%, transparent); z-index: 100; pointer-events: none; }
+#brand { display: flex; align-items: baseline; gap: 14px; }
+#brand-jp { font-size: 28px; font-weight: 800; letter-spacing: 0.3em; color: transparent;
+  background: linear-gradient(135deg, #d4af6a, #8b6f3a 50%, #d4af6a); -webkit-background-clip: text; background-clip: text;
+  text-shadow: 0 0 20px rgba(212,175,106,0.3); }
+#brand-en { font-size: 10px; color: #5a4a60; letter-spacing: 0.4em; font-family: sans-serif; }
+#tagline { font-size: 11px; color: #6a5a70; margin-top: 8px; letter-spacing: 0.15em; font-style: italic; }
 
-/* モード切替 */
-#mode-bar {
-  position: absolute; top: 120px; left: 50%; transform: translateX(-50%);
-  z-index: 100;
-  display: flex; gap: 4px;
-  background: rgba(10,7,16,0.85);
-  border: 1px solid rgba(139,115,85,0.25);
-  border-radius: 24px;
-  padding: 4px;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(212,175,106,0.1);
-}
-.mode-btn {
-  padding: 8px 18px; border-radius: 20px;
-  border: none; background: transparent;
-  color: #5a4a60; font-size: 15px;
-  cursor: pointer; transition: all 0.3s;
-  -webkit-appearance: none;
-}
-.mode-btn.active {
-  background: linear-gradient(135deg, rgba(212,175,106,0.2), rgba(94,55,120,0.2));
-  color: #d4af6a;
-  box-shadow: inset 0 0 8px rgba(212,175,106,0.2);
-}
+#mode-bar { position: absolute; top: 120px; left: 50%; transform: translateX(-50%); z-index: 100;
+  display: flex; gap: 4px; background: rgba(10,7,16,0.85); border: 1px solid rgba(139,115,85,0.25);
+  border-radius: 24px; padding: 4px; backdrop-filter: blur(20px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(212,175,106,0.1); }
+.mode-btn { padding: 8px 16px; border-radius: 20px; border: none; background: transparent;
+  color: #5a4a60; font-size: 15px; cursor: pointer; transition: all 0.3s; -webkit-appearance: none; }
+.mode-btn.active { background: linear-gradient(135deg, rgba(212,175,106,0.2), rgba(94,55,120,0.2));
+  color: #d4af6a; box-shadow: inset 0 0 8px rgba(212,175,106,0.2); }
 
-/* 距離バッジ */
-#dist-badge {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  z-index: 100;
-  display: none;
-  background: radial-gradient(ellipse at center, rgba(10,7,16,0.95), rgba(20,10,30,0.95));
-  border: 1px solid rgba(212,175,106,0.3);
-  border-radius: 24px;
-  padding: 18px 32px;
-  text-align: center;
-  backdrop-filter: blur(20px);
-  pointer-events: none;
-  box-shadow: 0 0 30px rgba(94,55,120,0.4), inset 0 1px 0 rgba(212,175,106,0.15);
-}
+#dist-badge { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100;
+  display: none; background: radial-gradient(ellipse at center, rgba(10,7,16,0.95), rgba(20,10,30,0.95));
+  border: 1px solid rgba(212,175,106,0.3); border-radius: 24px; padding: 18px 32px;
+  text-align: center; backdrop-filter: blur(20px); pointer-events: none;
+  box-shadow: 0 0 30px rgba(94,55,120,0.4), inset 0 1px 0 rgba(212,175,106,0.15); }
 #dist-badge.show { display: block; animation: float 3s ease-in-out infinite; }
-@keyframes float {
-  0%, 100% { transform: translate(-50%, -50%); }
-  50% { transform: translate(-50%, calc(-50% - 6px)); }
-}
-#dist-num {
-  font-size: 38px; font-weight: 700;
-  background: linear-gradient(135deg, #f0d49a, #d4af6a);
-  -webkit-background-clip: text; background-clip: text;
-  color: transparent;
-  letter-spacing: -0.02em; line-height: 1;
-}
-#dist-unit {
-  font-size: 11px; color: #6a5a70;
-  margin-top: 6px; letter-spacing: 0.2em;
-}
+@keyframes float { 0%,100% { transform: translate(-50%,-50%); } 50% { transform: translate(-50%,calc(-50% - 6px)); } }
+#dist-num { font-size: 38px; font-weight: 700;
+  background: linear-gradient(135deg, #f0d49a, #d4af6a); -webkit-background-clip: text; background-clip: text;
+  color: transparent; letter-spacing: -0.02em; line-height: 1; }
+#dist-unit { font-size: 11px; color: #6a5a70; margin-top: 6px; letter-spacing: 0.2em; }
 
-/* ボトムパネル */
-#bottom {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  z-index: 100;
-  padding: 20px 16px 40px;
-  background: linear-gradient(to top, rgba(10,7,16,0.98) 65%, transparent);
-}
+#debug-panel { display: none; position: absolute; top: 175px; left: 50%; transform: translateX(-50%);
+  z-index: 100; background: rgba(10,7,16,0.92); border: 1px solid rgba(212,175,106,0.4);
+  border-radius: 10px; padding: 10px 14px; backdrop-filter: blur(10px);
+  max-width: 90%; text-align: center; font-size: 11px; color: #d4af6a; line-height: 1.6; }
 
-#go-btn {
-  width: 100%; padding: 17px 0;
-  border-radius: 16px; border: 1px solid transparent;
-  font-size: 16px; font-weight: 700;
-  font-family: inherit; letter-spacing: 0.3em;
-  cursor: pointer; transition: all 0.4s;
-  -webkit-appearance: none;
-  position: relative; overflow: hidden;
-}
-#go-btn.ready {
-  background:
-    linear-gradient(135deg, rgba(212,175,106,0.15), rgba(94,55,120,0.2)),
-    radial-gradient(ellipse at top, rgba(212,175,106,0.1), transparent);
-  border-color: rgba(212,175,106,0.4);
-  color: #f0d49a;
-  box-shadow:
-    0 4px 24px rgba(94,55,120,0.4),
-    inset 0 1px 0 rgba(212,175,106,0.3),
-    inset 0 -1px 0 rgba(94,55,120,0.2);
-  text-shadow: 0 0 8px rgba(212,175,106,0.5);
-}
-#go-btn.ready:active {
-  transform: scale(0.98);
-  box-shadow: 0 2px 12px rgba(94,55,120,0.6);
-}
-#go-btn.loading {
-  background: rgba(20,15,28,0.8);
-  color: #4a3a50;
-  border-color: rgba(139,115,85,0.15);
-  cursor: not-allowed;
-}
-
-/* エラー */
-#error-msg {
-  display: none;
-  font-size: 12px; color: #c89090; line-height: 1.7;
+#bottom { position: absolute; bottom: 0; left: 0; right: 0; z-index: 100; padding: 20px 16px 40px;
+  background: linear-gradient(to top, rgba(10,7,16,0.98) 65%, transparent); }
+#go-btn { width: 100%; padding: 17px 0; border-radius: 16px; border: 1px solid transparent;
+  font-size: 16px; font-weight: 700; font-family: inherit; letter-spacing: 0.3em;
+  cursor: pointer; transition: all 0.4s; -webkit-appearance: none; }
+#go-btn.ready { background: linear-gradient(135deg, rgba(212,175,106,0.15), rgba(94,55,120,0.2));
+  border-color: rgba(212,175,106,0.4); color: #f0d49a;
+  box-shadow: 0 4px 24px rgba(94,55,120,0.4), inset 0 1px 0 rgba(212,175,106,0.3);
+  text-shadow: 0 0 8px rgba(212,175,106,0.5); }
+#go-btn.ready:active { transform: scale(0.98); }
+#go-btn.loading { background: rgba(20,15,28,0.8); color: #4a3a50; cursor: not-allowed; }
+#error-msg { display: none; font-size: 12px; color: #c89090; line-height: 1.7;
   margin-bottom: 12px; padding: 12px 14px;
   background: linear-gradient(135deg, rgba(40,10,20,0.6), rgba(20,5,15,0.6));
-  border: 1px solid rgba(180,80,80,0.25);
-  border-radius: 10px;
-  backdrop-filter: blur(10px);
-}
+  border: 1px solid rgba(180,80,80,0.25); border-radius: 10px; }
 
-/* 到着モーダル */
-#reveal-modal {
-  display: none;
-  position: absolute; inset: 0; z-index: 300;
-  background:
-    radial-gradient(ellipse at center, rgba(40,20,60,0.4), rgba(10,7,16,0.98)),
-    rgba(10,7,16,0.97);
-  flex-direction: column; align-items: center; justify-content: center;
-  padding: 40px 28px;
-}
+#reveal-modal { display: none; position: absolute; inset: 0; z-index: 300;
+  background: radial-gradient(ellipse at center, rgba(40,20,60,0.4), rgba(10,7,16,0.98)), rgba(10,7,16,0.97);
+  flex-direction: column; align-items: center; justify-content: center; padding: 40px 28px; }
 #reveal-modal.show { display: flex; animation: revealIn 0.8s ease; }
-@keyframes revealIn {
-  from { opacity: 0; backdrop-filter: blur(0px); }
-  to { opacity: 1; backdrop-filter: blur(20px); }
-}
-
-#reveal-ornament {
-  font-size: 14px; color: #6a5a70; letter-spacing: 1em;
-  margin-bottom: 24px; animation: fadeUp 0.6s 0.2s both;
-}
-#reveal-icon {
-  font-size: 88px;
-  margin-bottom: 24px;
-  filter: drop-shadow(0 0 30px rgba(212,175,106,0.5));
-  animation: revealIcon 0.8s 0.3s both;
-}
-@keyframes revealIcon {
-  from { transform: scale(0.3) rotate(-20deg); opacity: 0; }
-  60% { transform: scale(1.1) rotate(5deg); }
-  to { transform: scale(1) rotate(0); opacity: 1; }
-}
-#reveal-label {
-  font-size: 10px; color: #d4af6a; letter-spacing: 0.6em;
-  margin-bottom: 16px;
-  font-family: sans-serif;
-  animation: fadeUp 0.6s 0.5s both;
-}
-#reveal-name {
-  font-size: 30px; font-weight: 700;
-  text-align: center; line-height: 1.4;
+@keyframes revealIn { from { opacity: 0; } to { opacity: 1; } }
+#reveal-ornament { font-size: 14px; color: #6a5a70; letter-spacing: 1em; margin-bottom: 24px; }
+#reveal-icon { font-size: 88px; margin-bottom: 24px; filter: drop-shadow(0 0 30px rgba(212,175,106,0.5)); }
+#reveal-label { font-size: 10px; color: #d4af6a; letter-spacing: 0.6em; margin-bottom: 16px; font-family: sans-serif; }
+#reveal-name { font-size: 30px; font-weight: 700; text-align: center; line-height: 1.4;
   margin-bottom: 12px; max-width: 320px;
   background: linear-gradient(135deg, #f0d49a, #d4af6a 50%, #f0d49a);
-  -webkit-background-clip: text; background-clip: text;
-  color: transparent;
-  animation: fadeUp 0.6s 0.7s both;
-}
-#reveal-cat {
-  font-size: 13px; color: #8b7355;
-  margin-bottom: 28px; letter-spacing: 0.2em;
-  animation: fadeUp 0.6s 0.85s both;
-}
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-#reveal-desc {
-  font-size: 13px; color: #a8927a; line-height: 1.9; text-align: center;
-  margin-bottom: 28px; max-width: 320px;
-  padding: 16px 18px;
-  background: rgba(20,15,28,0.5);
-  border-left: 2px solid rgba(212,175,106,0.4);
-  border-radius: 4px;
-  animation: fadeUp 0.6s 1s both;
-}
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+#reveal-cat { font-size: 13px; color: #8b7355; margin-bottom: 28px; letter-spacing: 0.2em; }
+#reveal-desc { font-size: 13px; color: #a8927a; line-height: 1.9; text-align: center;
+  margin-bottom: 28px; max-width: 320px; padding: 16px 18px;
+  background: rgba(20,15,28,0.5); border-left: 2px solid rgba(212,175,106,0.4); border-radius: 4px; }
 #reveal-desc:empty { display: none; }
+#reveal-actions { display: flex; gap: 10px; width: 100%; max-width: 320px; }
+.reveal-btn { flex: 1; padding: 13px 0; border-radius: 12px;
+  border: 1px solid rgba(139,115,85,0.3); background: rgba(20,15,28,0.6);
+  color: #a8927a; font-size: 13px; font-family: inherit; cursor: pointer;
+  letter-spacing: 0.15em; -webkit-appearance: none; }
+.reveal-btn.primary { background: linear-gradient(135deg, rgba(212,175,106,0.2), rgba(94,55,120,0.3));
+  border-color: rgba(212,175,106,0.5); color: #f0d49a; }
 
-#reveal-actions {
-  display: flex; gap: 10px; width: 100%; max-width: 320px;
-  animation: fadeUp 0.6s 1.2s both;
-}
-.reveal-btn {
-  flex: 1; padding: 13px 0;
-  border-radius: 12px; border: 1px solid rgba(139,115,85,0.3);
-  background: rgba(20,15,28,0.6);
-  color: #a8927a; font-size: 13px; font-weight: 500;
-  font-family: inherit; cursor: pointer;
-  letter-spacing: 0.15em;
-  -webkit-appearance: none;
-}
-.reveal-btn.primary {
-  background: linear-gradient(135deg, rgba(212,175,106,0.2), rgba(94,55,120,0.3));
-  border-color: rgba(212,175,106,0.5);
-  color: #f0d49a;
-}
-
-/* マーカー */
-.q-marker {
-  position: relative;
-  width: 44px; height: 44px;
+.q-marker { position: relative; width: 44px; height: 44px;
   background: radial-gradient(circle at 30% 30%, #d4af6a, #8b6f3a);
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
+  border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
   display: flex; align-items: center; justify-content: center;
-  box-shadow:
-    0 4px 16px rgba(94,55,120,0.6),
-    0 0 24px rgba(212,175,106,0.4),
-    inset 0 -2px 4px rgba(0,0,0,0.3);
-  animation: markerPulse 2.5s ease-in-out infinite;
-}
+  box-shadow: 0 4px 16px rgba(94,55,120,0.6), 0 0 24px rgba(212,175,106,0.4);
+  animation: markerPulse 2.5s ease-in-out infinite; }
 @keyframes markerPulse {
-  0%, 100% { box-shadow: 0 4px 16px rgba(94,55,120,0.6), 0 0 24px rgba(212,175,106,0.4), inset 0 -2px 4px rgba(0,0,0,0.3); }
-  50% { box-shadow: 0 4px 20px rgba(94,55,120,0.8), 0 0 40px rgba(212,175,106,0.7), inset 0 -2px 4px rgba(0,0,0,0.3); }
+  0%,100% { box-shadow: 0 4px 16px rgba(94,55,120,0.6), 0 0 24px rgba(212,175,106,0.4); }
+  50% { box-shadow: 0 4px 20px rgba(94,55,120,0.8), 0 0 40px rgba(212,175,106,0.7); }
 }
-.q-marker-inner {
-  transform: rotate(45deg);
-  font-size: 18px; font-weight: 800; color: #0a0710;
-  font-family: serif;
-}
+.q-marker-inner { transform: rotate(45deg); font-size: 18px; font-weight: 800; color: #0a0710; }
 
-/* スピナー */
-.spinner {
-  display: inline-block;
-  width: 12px; height: 12px;
-  border: 2px solid rgba(212,175,106,0.2);
-  border-top-color: #d4af6a;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-right: 8px;
-  vertical-align: -2px;
-}
+.spinner { display: inline-block; width: 12px; height: 12px;
+  border: 2px solid rgba(212,175,106,0.2); border-top-color: #d4af6a;
+  border-radius: 50%; animation: spin 1s linear infinite; margin-right: 8px; vertical-align: -2px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
@@ -311,7 +129,6 @@ html, body { height: 100%; overflow: hidden; background: #0a0710; color: #e8d9b8
   <button class="mode-btn" data-mode="bike">🚴</button>
   <button class="mode-btn" data-mode="car">🚗</button>
   <div style="width:1px;background:rgba(139,115,85,0.3);margin:4px 2px;"></div>
-  <button class="mode-btn" id="mania-btn" title="マニア">⚡</button>
   <button class="mode-btn" id="emotion-btn" title="感動">✨</button>
   <button class="mode-btn" id="horror-btn" title="恐怖">👻</button>
 </div>
@@ -321,48 +138,14 @@ html, body { height: 100%; overflow: hidden; background: #0a0710; color: #e8d9b8
   <div id="dist-unit">目的地まで</div>
 </div>
 
-<div id="debug-panel" style="
-  display: none;
-  position: absolute; top: 175px; left: 50%; transform: translateX(-50%);
-  z-index: 100;
-  background: rgba(10,7,16,0.92);
-  border: 1px solid rgba(212,175,106,0.4);
-  border-radius: 10px;
-  padding: 10px 14px;
-  backdrop-filter: blur(10px);
-  max-width: 90%;
-  text-align: center;
-  font-size: 11px;
-  color: #d4af6a;
-  letter-spacing: 0.05em;
-  line-height: 1.6;
-">
+<div id="debug-panel">
   <div style="font-size:9px;color:#8b6f3a;letter-spacing:0.3em;margin-bottom:4px;">[DEBUG]</div>
   <div id="debug-name" style="color:#f0d49a;font-weight:700;"></div>
   <div id="debug-meta" style="font-size:10px;color:#8b7355;margin-top:2px;"></div>
-  <div style="display:flex;gap:6px;justify-content:center;margin-top:8px;">
-    <a id="debug-wiki" href="#" target="_blank" rel="noopener" style="
-      display:none;
-      padding:4px 12px;
-      background:rgba(212,175,106,0.15);
-      border:1px solid rgba(212,175,106,0.4);
-      border-radius:6px;
-      color:#f0d49a;
-      font-size:10px;
-      text-decoration:none;
-      letter-spacing:0.1em;
-    ">Wikipedia ↗</a>
-    <a id="debug-gmap" href="#" target="_blank" rel="noopener" style="
-      padding:4px 12px;
-      background:rgba(94,55,120,0.2);
-      border:1px solid rgba(94,55,120,0.5);
-      border-radius:6px;
-      color:#c0a0d0;
-      font-size:10px;
-      text-decoration:none;
-      letter-spacing:0.1em;
-    ">📍 Googleマップ ↗</a>
-  </div>
+  <a id="debug-gmap" href="#" target="_blank" rel="noopener" style="
+    display:inline-block;margin-top:8px;padding:4px 12px;
+    background:rgba(94,55,120,0.2);border:1px solid rgba(94,55,120,0.5);
+    border-radius:6px;color:#c0a0d0;font-size:10px;text-decoration:none;">📍 Googleマップ ↗</a>
 </div>
 
 <div id="bottom">
@@ -393,61 +176,32 @@ const OVERPASS_SERVERS = [
 const MODE_RADIUS = { foot: 1500, bike: 5000, car: 15000 };
 const OSRM_PROFILE = { foot: 'foot', bike: 'bike', car: 'driving' };
 
-const CATEGORY_LABELS = {
-  archaeological_site: '遺跡', ruins: '廃墟', monument: '碑',
-  memorial: '記念碑', wayside_shrine: '道祖神', boundary_stone: '境界石',
-  stone: '謎の石', rock: '奇岩', cave_entrance: '洞窟', cliff: '断崖',
-  shrine: '祠', place_of_worship: '社寺', castle: '城跡',
-  tomb: '塚', milestone: '里程標', well: '古井戸',
-  artwork: 'モニュメント', viewpoint: '展望地',
-  tree: '名木', water_tower: '給水塔', chimney: '煙突',
-  lighthouse: '燈台', gasometer: 'ガスタンク',
-  abandoned: '廃線跡', cemetery: '墓所',
-  vending_machine: '謎の自販機', telephone: '公衆電話',
-  toilets: '公衆便所', bench: 'ベンチ', drinking_water: '水場',
-  fountain: '噴水', bridge: '橋', steps: '石段',
-  public_bath: '銭湯', sento: '銭湯',
-  bunker: '防空壕跡', mine: '坑道',
-  spring: '湧水', volcano: '火口',
-  wikipedia: '伝承の地', wikidata: '文学の舞台',
-};
+const HORROR_KEYWORDS = /血|鬼|呪|死|首|怨|霊|怪|妖|幽|地獄|供養|処刑|刑場|無縁|殉難|殉教|心霊|怪談|事故|墓|塚|塔婆/;
+const EMOTION_KEYWORDS = /民話|伝説|文学|物語|信仰|聖地|遺跡|名木|巨木|奇岩|滝|湧水|名水|古道|旧道|城跡|砦|館跡/;
 
 let mode = 'foot';
-let mania = false;
 let emotion = false;
 let horror = false;
 let recentPicks = JSON.parse(localStorage.getItem('recentPicks') || '[]');
+let badReports = JSON.parse(localStorage.getItem('badReports') || '[]');
 let userLat, userLon;
 let spotLat, spotLon, spotTags, spotName, spotDesc, spotSource;
 let spots = [], chosen = null;
 let routeLayer = null, selfMarker = null, destMarker = null;
 let watchId = null;
 let arrived = false;
-let badReports = JSON.parse(localStorage.getItem('badReports') || '[]');
 
 // ---- 地図 ----
-const map = L.map('map', { zoomControl: false, attributionControl: true })
-  .setView([35.6812, 139.7671], 14);
-
+const map = L.map('map', { zoomControl: false }).setView([35.6812, 139.7671], 14);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
-  attribution: '© CARTO © OSM',
-  subdomains: 'abcd', maxZoom: 19,
+  attribution: '© CARTO © OSM', subdomains: 'abcd', maxZoom: 19,
 }).addTo(map);
-
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-// ---- アイコン ----
 const selfIcon = L.divIcon({
-  html: `<div style="
-    width:14px;height:14px;
-    background:radial-gradient(circle,#d4af6a,#8b6f3a);
-    border:2px solid rgba(255,240,200,0.9);
-    border-radius:50%;
-    box-shadow:0 0 16px rgba(212,175,106,0.9), 0 0 30px rgba(94,55,120,0.5);
-  "></div>`,
+  html: `<div style="width:14px;height:14px;background:radial-gradient(circle,#d4af6a,#8b6f3a);border:2px solid rgba(255,240,200,0.9);border-radius:50%;box-shadow:0 0 16px rgba(212,175,106,0.9), 0 0 30px rgba(94,55,120,0.5);"></div>`,
   className: '', iconAnchor: [7, 7],
 });
-
 const destIcon = L.divIcon({
   html: '<div class="q-marker"><div class="q-marker-inner">?</div></div>',
   className: '', iconAnchor: [22, 44],
@@ -462,129 +216,149 @@ function haversine(lat1, lon1, lat2, lon2) {
   return Math.round(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
 }
 
-function getIcon(tags, source) {
-  if (source === 'wikipedia') return '📖';
-  if (source === 'wikidata') return '🔮';
-  if (source === 'gsi') return '🗾';
-  if (!tags) return '📍';
-  if (tags.historic === 'wayside_shrine') return '⛩️';
-  if (tags.historic === 'ruins') return '🏚️';
-  if (tags.historic === 'castle') return '🏯';
-  if (tags.historic === 'tomb') return '⚱️';
-  if (tags.historic === 'boundary_stone') return '🪨';
-  if (tags.historic === 'milestone') return '🪧';
-  if (tags.historic === 'well') return '🪣';
-  if (tags.historic === 'monument' || tags.historic === 'memorial') return '🗿';
-  if (tags.historic) return '🏛️';
-  if (tags.tourism === 'artwork') return '🎨';
-  if (tags.tourism === 'viewpoint') return '🔭';
-  if (tags.natural === 'rock') return '🪨';
-  if (tags.natural === 'cave_entrance') return '🕳️';
-  if (tags.natural === 'cliff') return '⛰️';
-  if (tags.natural === 'tree') return '🌳';
-  if (tags.natural === 'spring') return '💧';
-  if (tags.natural === 'volcano') return '🌋';
-  if (tags.man_made === 'water_tower') return '🗼';
-  if (tags.man_made === 'chimney') return '🏭';
-  if (tags.man_made === 'lighthouse') return '🚨';
-  if (tags.man_made === 'gasometer') return '⚙️';
-  if (tags.man_made === 'mine_shaft' || tags.man_made === 'adit') return '⛏️';
-  if (tags.man_made === 'bunker_silo') return '🪖';
-  if (tags.man_made === 'bridge') return '🌉';
-  if (tags.railway === 'abandoned') return '🛤️';
-  if (tags.amenity === 'place_of_worship') return '🏮';
-  if (tags.amenity === 'public_bath') return '♨️';
-  if (tags.amenity === 'fountain') return '⛲';
-  if (tags.amenity === 'drinking_water') return '💧';
-  if (tags.amenity === 'vending_machine') return '🥤';
-  if (tags.amenity === 'telephone') return '☎️';
-  if (tags.amenity === 'toilets') return '🚻';
-  if (tags.amenity === 'bench') return '🪑';
-  if (tags.highway === 'steps') return '🪜';
-  if (tags.landuse === 'cemetery') return '⚰️';
-  if (tags.abandoned) return '🏚️';
+function getIcon(s) {
+  const t = s.tags || {};
+  const name = (s.name || t.name || '');
+  if (HORROR_KEYWORDS.test(name + ' ' + (s.desc || ''))) {
+    if (/塚|墓/.test(name)) return '⚰️';
+    return '👻';
+  }
+  if (t.historic === 'wayside_shrine' || t.amenity === 'place_of_worship' && t.religion === 'buddhist' && !t.name) return '🪦';
+  if (t.historic === 'memorial') return '🗿';
+  if (t.historic === 'monument') return '🗿';
+  if (t.historic === 'ruins') return '🏚️';
+  if (t.historic === 'castle') return '🏯';
+  if (t.historic === 'tomb') return '⚱️';
+  if (t.historic === 'boundary_stone' || t.historic === 'milestone') return '🪧';
+  if (t.historic === 'well') return '🪣';
+  if (t.historic === 'archaeological_site') return '🏺';
+  if (t.historic) return '🏛️';
+  if (t.man_made === 'cross') return '✝️';
+  if (t.tourism === 'artwork') return '🎨';
+  if (t.tourism === 'viewpoint') return '🔭';
+  if (t.natural === 'rock' || t.natural === 'stone') return '🪨';
+  if (t.natural === 'cave_entrance') return '🕳️';
+  if (t.natural === 'cliff') return '⛰️';
+  if (t.natural === 'tree') return '🌳';
+  if (t.natural === 'spring') return '💧';
+  if (t.natural === 'volcano') return '🌋';
+  if (t.natural === 'peak') return '🗻';
+  if (t.natural === 'arch') return '🌉';
+  if (t.waterway === 'waterfall') return '🏞️';
+  if (t.man_made === 'water_tower') return '🗼';
+  if (t.man_made === 'chimney') return '🏭';
+  if (t.man_made === 'lighthouse') return '🚨';
+  if (t.man_made === 'windmill' || t.man_made === 'watermill') return '⚙️';
+  if (t.man_made === 'mine_shaft' || t.man_made === 'adit') return '⛏️';
+  if (t.railway === 'abandoned') return '🛤️';
+  if (t.amenity === 'place_of_worship') return '⛩️';
+  if (t.amenity === 'public_bath') return '♨️';
+  if (t.amenity === 'fountain') return '⛲';
+  if (t.shop === 'confectionery') return '🍡';
+  if (t.shop) return '🏪';
+  if (t.craft) return '🔨';
+  if (t.landuse === 'cemetery') return '⚰️';
+  if (t.abandoned || t.disused || t.ruins) return '🏚️';
   return '📍';
 }
 
-function getLabel(tags, name, source) {
-  if (name) return name;
-  if (tags?.name) return tags.name;
-  if (tags?.['name:ja']) return tags['name:ja'];
-  const t = tags?.historic || tags?.tourism || tags?.natural || tags?.man_made ||
-           tags?.amenity || tags?.railway || tags?.landuse;
-  return CATEGORY_LABELS[t] || '名無きもの';
+function getLabel(s) {
+  const t = s.tags || {};
+  if (s.name) return s.name;
+  if (t.name) return t.name;
+  if (t['name:ja']) return t['name:ja'];
+  // タイプ別ラベル
+  if (t.historic === 'wayside_shrine') return '道祖神';
+  if (t.historic === 'memorial') return '供養塔/記念碑';
+  if (t.historic === 'monument') return '石碑';
+  if (t.historic === 'ruins') return '廃墟・遺構';
+  if (t.historic === 'castle') return '城跡';
+  if (t.historic === 'tomb') return '古墳・塚';
+  if (t.historic === 'archaeological_site') return '遺跡';
+  if (t.historic === 'boundary_stone') return '境界石';
+  if (t.historic === 'milestone') return '里程標';
+  if (t.historic === 'well') return '古井戸';
+  if (t.historic === 'stone') return '謎の石';
+  if (t.amenity === 'place_of_worship' && t.religion === 'buddhist') return '小さなお堂';
+  if (t.amenity === 'place_of_worship' && t.religion === 'shinto') return '小さな祠';
+  if (t.amenity === 'place_of_worship') return '社寺';
+  if (t.natural === 'tree') return '一本の木';
+  if (t.natural === 'rock' || t.natural === 'stone') return '奇岩';
+  if (t.natural === 'spring') return '湧き水';
+  if (t.natural === 'cave_entrance') return '洞窟';
+  if (t.natural === 'cliff') return '断崖';
+  if (t.natural === 'peak') return '山頂';
+  if (t.natural === 'arch') return '自然のアーチ';
+  if (t.waterway === 'waterfall') return '滝';
+  if (t.man_made === 'cross') return '石塔';
+  if (t.man_made === 'lighthouse') return '燈台';
+  if (t.man_made === 'mine_shaft' || t.man_made === 'adit') return '坑道跡';
+  if (t.railway === 'abandoned') return '廃線跡';
+  if (t.tourism === 'artwork') return 'モニュメント';
+  if (t.tourism === 'viewpoint') return '展望地';
+  if (t.shop === 'confectionery') return '駄菓子屋';
+  if (t.shop) return '個人商店';
+  if (t.craft) return '職人の店';
+  if (t.landuse === 'cemetery') return '墓所';
+  if (t.abandoned || t.disused) return '廃れた何か';
+  return '名無きもの';
 }
 
-function getCategory(tags, source) {
-  if (source === 'wikipedia') return '伝承の地';
-  if (source === 'wikidata') return '記録の地';
-  if (source === 'gsi') return '地名の地';
-  const t = tags?.historic || tags?.tourism || tags?.natural || tags?.man_made ||
-           tags?.amenity || tags?.railway || tags?.landuse;
-  return CATEGORY_LABELS[t] || '謎のもの';
+function getCategory(s) {
+  if (s.source === 'wikidata') return s.desc ? s.desc.slice(0, 40) : '記録の地';
+  const t = s.tags || {};
+  if (t.historic) return '歴史';
+  if (t.natural) return '自然';
+  if (t.man_made) return '人工物';
+  if (t.amenity) return '生活';
+  if (t.shop || t.craft) return '商い';
+  if (t.tourism) return '名所';
+  if (t.waterway) return '水';
+  if (t.railway) return '鉄道跡';
+  if (t.landuse === 'cemetery') return '墓所';
+  return '謎';
 }
 
-function fmtDist(m) {
-  return m < 1000 ? m + 'm' : (m/1000).toFixed(1) + 'km';
-}
-
-function showError(msg) {
-  const el = document.getElementById('error-msg');
-  el.textContent = '⚠ ' + msg;
-  el.style.display = 'block';
-}
+function fmtDist(m) { return m < 1000 ? m + 'm' : (m/1000).toFixed(1) + 'km'; }
+function showError(msg) { const e = document.getElementById('error-msg'); e.textContent = '⚠ ' + msg; e.style.display = 'block'; }
 function hideError() { document.getElementById('error-msg').style.display = 'none'; }
-
 function setBtn(state, text) {
-  const btn = document.getElementById('go-btn');
-  btn.className = state;
-  btn.innerHTML = state === 'loading' ? `<span class="spinner"></span>${text}` : text;
-  btn.disabled = state !== 'ready';
+  const b = document.getElementById('go-btn');
+  b.className = state;
+  b.innerHTML = state === 'loading' ? `<span class="spinner"></span>${text}` : text;
+  b.disabled = state !== 'ready';
 }
 
 function updateDistBadge(lat, lon) {
   if (!spotLat) return;
   const d = haversine(lat, lon, spotLat, spotLon);
-  const badge = document.getElementById('dist-badge');
-  badge.classList.add('show');
+  document.getElementById('dist-badge').classList.add('show');
   document.getElementById('dist-num').textContent = fmtDist(d);
-  if (d < 50 && !arrived) {
-    arrived = true;
-    showReveal();
-  }
+  if (d < 50 && !arrived) { arrived = true; showReveal(); }
 }
 
 function updateSelf(lat, lon) {
   userLat = lat; userLon = lon;
-  if (!selfMarker) {
-    selfMarker = L.marker([lat, lon], { icon: selfIcon, zIndexOffset: 1000 }).addTo(map);
-  } else {
-    selfMarker.setLatLng([lat, lon]);
-  }
+  if (!selfMarker) selfMarker = L.marker([lat, lon], { icon: selfIcon, zIndexOffset: 1000 }).addTo(map);
+  else selfMarker.setLatLng([lat, lon]);
   updateDistBadge(lat, lon);
 }
 
 // ---- ルート ----
-async function drawRoute(fromLat, fromLon, toLat, toLon) {
-  const profile = OSRM_PROFILE[mode];
-  const url = `${OSRM}/${profile}/${fromLon},${fromLat};${toLon},${toLat}?overview=full&geometries=geojson`;
+async function drawRoute(fLat, fLon, tLat, tLon) {
+  const url = `${OSRM}/${OSRM_PROFILE[mode]}/${fLon},${fLat};${tLon},${tLat}?overview=full&geometries=geojson`;
   const res = await fetch(url);
   const data = await res.json();
-  if (!data.routes || data.routes.length === 0) throw new Error('route');
-
-  if (routeLayer) map.removeLayer(routeLayer);
+  if (!data.routes?.length) throw new Error('route');
+  clearRoute();
   routeLayer = L.geoJSON(data.routes[0].geometry, {
-    style: { color: '#d4af6a', weight: 3, opacity: 0.85, lineCap: 'round', lineJoin: 'round',
-             dashArray: '1, 8' }
+    style: { color: '#d4af6a', weight: 3, opacity: 0.85, lineCap: 'round', dashArray: '1, 8' }
   }).addTo(map);
-  // 影付き層
-  const shadow = L.geoJSON(data.routes[0].geometry, {
+  routeLayer.shadow = L.geoJSON(data.routes[0].geometry, {
     style: { color: '#5e3778', weight: 8, opacity: 0.3 }
   }).addTo(map);
-  routeLayer.shadow = shadow;
   map.fitBounds(routeLayer.getBounds(), { padding: [80, 80] });
 }
-
 function clearRoute() {
   if (routeLayer) {
     if (routeLayer.shadow) map.removeLayer(routeLayer.shadow);
@@ -593,69 +367,58 @@ function clearRoute() {
   }
 }
 
-// ---- データソース ----
-
-// OSM Overpass
+// ---- OSM ----
 async function fetchOSM(lat, lon, r) {
-  const q = `[out:json][timeout:25];
+  const q = `[out:json][timeout:60];
 (
-  // 歴史的なもの
+  // 歴史 - 全部
   node["historic"](around:${r},${lat},${lon});
-  // 道端の小さなもの
-  node["man_made"="cross"](around:${r},${lat},${lon});
-  node["man_made"="stele"](around:${r},${lat},${lon});
-  node["man_made"="survey_point"](around:${r},${lat},${lon});
-  // アート系
-  node["tourism"="artwork"](around:${r},${lat},${lon});
-  node["tourism"="viewpoint"](around:${r},${lat},${lon});
-  // 自然
-  node["natural"~"rock|cave_entrance|cliff|spring|volcano|geyser|sinkhole|peak|arch|stone"](around:${r},${lat},${lon});
-  node["waterway"="waterfall"](around:${r},${lat},${lon});
-  node["natural"="tree"]["denotation"~"natural_monument|landmark"](around:${r},${lat},${lon});
-  node["natural"="tree"]["heritage"](around:${r},${lat},${lon});
+  // 社寺・祠（仏教系の名前なし＝地蔵堂の可能性）
+  node["amenity"="place_of_worship"](around:${r},${lat},${lon});
+  // 道端の十字架・石塔・石碑
+  node["man_made"~"cross|stele|survey_point"](around:${r},${lat},${lon});
+  node["man_made"="memorial"](around:${r},${lat},${lon});
+  // アート・絶景
+  node["tourism"~"artwork|viewpoint"](around:${r},${lat},${lon});
+  // 自然・奇景
+  node["natural"~"rock|stone|cave_entrance|cliff|spring|volcano|geyser|sinkhole|peak|arch"](around:${r},${lat},${lon});
+  // 巨木（名前付き or 詳細登録ある or 天然記念物）
   node["natural"="tree"]["name"](around:${r},${lat},${lon});
-  node["natural"="water"]["name"](around:${r},${lat},${lon});
+  node["natural"="tree"]["heritage"](around:${r},${lat},${lon});
+  node["natural"="tree"]["denotation"](around:${r},${lat},${lon});
+  node["natural"="tree"]["circumference"](around:${r},${lat},${lon});
+  node["natural"="tree"]["species"](around:${r},${lat},${lon});
+  node["natural"="tree"]["genus"](around:${r},${lat},${lon});
+  // 滝
+  node["waterway"="waterfall"](around:${r},${lat},${lon});
   // 産業遺産
-  node["man_made"~"shrine|water_tower|chimney|gasometer|lighthouse|mine_shaft|adit|kiln|silo|storage_tank|windmill|watermill"](around:${r},${lat},${lon});
+  node["man_made"~"water_tower|chimney|gasometer|lighthouse|mine_shaft|adit|kiln|windmill|watermill|silo"](around:${r},${lat},${lon});
   // 廃線・廃墟
   node["railway"="abandoned"](around:${r},${lat},${lon});
   node["abandoned"](around:${r},${lat},${lon});
   node["disused"](around:${r},${lat},${lon});
   node["ruins"](around:${r},${lat},${lon});
-  // 寺社・聖地
-  node["amenity"="place_of_worship"](around:${r},${lat},${lon});
-  // 古い生活施設
+  // 古い生活
   node["amenity"="public_bath"](around:${r},${lat},${lon});
-  node["amenity"="fountain"](around:${r},${lat},${lon});
-  node["shop"="convenience"]["operator"](around:${r},${lat},${lon});
-  node["shop"="confectionery"](around:${r},${lat},${lon});
-  node["shop"="hardware"](around:${r},${lat},${lon});
-  node["shop"="newsagent"](around:${r},${lat},${lon});
-  node["shop"="tobacco"](around:${r},${lat},${lon});
+  node["shop"~"confectionery|hardware|newsagent|tobacco"](around:${r},${lat},${lon});
   node["craft"](around:${r},${lat},${lon});
   // 墓地
   node["landuse"="cemetery"](around:${r},${lat},${lon});
-  // 古地名・小地名
-  node["place"~"locality|hamlet|isolated_dwelling|farm"](around:${r},${lat},${lon});
+  // 古地名
+  node["place"~"locality|hamlet|isolated_dwelling"](around:${r},${lat},${lon});
 );
 out center;`;
 
   for (const server of OVERPASS_SERVERS) {
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch(server, {
-        method: 'POST',
-        body: 'data=' + encodeURIComponent(q),
-        signal: controller.signal,
-      });
-      clearTimeout(timer);
+      const res = await fetch(server, { method: 'POST', body: 'data=' + encodeURIComponent(q) });
+      if (!res.ok) continue;
       const data = await res.json();
       return (data.elements || [])
         .map(e => ({
           lat: e.lat || e.center?.lat,
           lon: e.lon || e.center?.lon,
-          tags: e.tags,
+          tags: e.tags || {},
           source: 'osm',
           id: 'osm-' + e.id,
         }))
@@ -666,82 +429,25 @@ out center;`;
   return [];
 }
 
-// 除外判定（駅・公的機関・商業施設）
+// 駅・公的機関などを除外
 function isExcluded(s) {
   const t = s.tags || {};
-  // 駅・交通
   if (t.railway === 'station' || t.railway === 'halt' || t.railway === 'tram_stop') return true;
-  if (t.public_transport) return true;
+  if (t.public_transport || t.aeroway) return true;
   if (t.highway === 'bus_stop') return true;
-  if (t.aeroway) return true;
-  // 公的機関
-  if (t.amenity === 'townhall' || t.amenity === 'courthouse') return true;
-  if (t.amenity === 'police' || t.amenity === 'fire_station') return true;
-  if (t.amenity === 'post_office' || t.amenity === 'post_box') return true;
-  if (t.amenity === 'school' || t.amenity === 'university' || t.amenity === 'college' || t.amenity === 'kindergarten') return true;
-  if (t.amenity === 'library') return true;
-  if (t.amenity === 'hospital' || t.amenity === 'clinic' || t.amenity === 'dentist' || t.amenity === 'pharmacy' || t.amenity === 'doctors') return true;
-  if (t.amenity === 'bank' || t.amenity === 'atm') return true;
-  if (t.amenity === 'parking' || t.amenity === 'fuel' || t.amenity === 'charging_station') return true;
+  if (['townhall','courthouse','police','fire_station','post_office','post_box',
+       'school','university','college','kindergarten','library',
+       'hospital','clinic','dentist','pharmacy','doctors',
+       'bank','atm','parking','fuel','charging_station'].includes(t.amenity)) return true;
   if (t.office) return true;
-  // チェーン店・商業色強いもの
-  if (t.shop && (t.brand || t.operator?.match(/セブン|ローソン|ファミリーマート|ミニストップ|デイリーヤマザキ/))) {
-    // チェーンのコンビニは除外、個人経営はOK
-    if (t.shop === 'convenience') return true;
-  }
+  // チェーンコンビニ
+  if (t.shop === 'convenience' && (t.brand || /セブン|ローソン|ファミリーマート|ミニストップ/.test(t.operator || ''))) return true;
   return false;
 }
 
-// Wikipedia/Wikidataの除外キーワード
-function isExcludedByName(name, desc) {
-  const text = (name || '') + ' ' + (desc || '');
-  // 学校・公共機関・駅・商業施設
-  if (/小学校|中学校|高等学校|大学|専門学校|高校$|学園|学院|幼稚園|保育園|保育所/.test(name || '')) return true;
-  if (/駅$|停留所|バスターミナル|空港|港$|料金所|IC$|インターチェンジ|ジャンクション/.test(name || '')) return true;
-  if (/役所|市役所|町役場|区役所|県庁|庁舎|警察署|消防署|郵便局|裁判所|刑務所|拘置所/.test(name || '')) return true;
-  if (/図書館|公民館|体育館|文化センター|福祉センター|保健所/.test(name || '')) return true;
-  if (/病院|医院|クリニック|診療所|歯科/.test(name || '')) return true;
-  if (/銀行|信用金庫|JA$|農協/.test(name || '')) return true;
-  if (/スーパー|ホームセンター|ショッピング|デパート|百貨店|アウトレット/.test(name || '')) return true;
-  if (/ホテル|旅館|ビジネスホテル/.test(name || '')) return true;
-  // 説明文ベース
-  if (/^(小学校|中学校|高等学校|大学|駅|郵便局|警察署|消防署|病院|銀行)/.test(desc || '')) return true;
-  return false;
-}
-async function fetchWikipedia(lat, lon, r) {
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6000);
-    const url = `https://ja.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}|${lon}&gsradius=${Math.min(r, 10000)}&gslimit=50&format=json&origin=*`;
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timer);
-    const data = await res.json();
-    return (data.query?.geosearch || [])
-      .filter(p => !isExcludedByName(p.title, ''))
-      .map(p => ({
-        lat: p.lat, lon: p.lon,
-        tags: { name: p.title },
-        source: 'wikipedia',
-        name: p.title,
-        pageid: p.pageid,
-        id: 'wp-' + p.pageid,
-      }));
-  } catch (e) { return []; }
-}
-
-// Wikipedia 詳細
-async function fetchWikipediaExtract(title) {
-  try {
-    const url = `https://ja.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    return data.extract || '';
-  } catch (e) { return ''; }
-}
-
-// Wikidata SPARQL（軽量版）
+// ---- Wikidata ----
 async function fetchWikidata(lat, lon, r) {
-  const km = Math.min(r / 1000, 5);
+  const km = Math.min(r / 1000, 10);
   const sparql = `
 SELECT ?item ?itemLabel ?coord ?desc WHERE {
   SERVICE wikibase:around {
@@ -752,66 +458,63 @@ SELECT ?item ?itemLabel ?coord ?desc WHERE {
   OPTIONAL { ?item schema:description ?desc . FILTER(LANG(?desc) = "ja") }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "ja,en". }
 }
-LIMIT 40`;
+LIMIT 60`;
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
     const url = 'https://query.wikidata.org/sparql?format=json&query=' + encodeURIComponent(sparql);
-    const res = await fetch(url, {
-      headers: { 'Accept': 'application/sparql-results+json' },
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
+    const res = await fetch(url, { headers: { 'Accept': 'application/sparql-results+json' } });
     const data = await res.json();
     return (data.results?.bindings || []).map(b => {
       const m = b.coord.value.match(/Point\(([-\d.]+) ([-\d.]+)\)/);
       if (!m) return null;
-      const name = b.itemLabel?.value;
+      const name = b.itemLabel?.value || '';
       const desc = b.desc?.value || '';
-      if (isExcludedByName(name, desc)) return null;
-      const isEmotional = /民話|伝説|妖怪|文学|物語|霊|怪|塚|古墳|信仰|聖地|遺跡|心霊|怨/.test(desc);
+      // 学校・公的機関・駅・商業施設・ホテル を除外
+      if (/小学校|中学校|高等学校|大学|専門学校|高校$|学園|学院|幼稚園|保育園/.test(name)) return null;
+      if (/駅$|空港|港$|料金所|IC$|インターチェンジ|ジャンクション|バスストップ/.test(name)) return null;
+      if (/役所|市役所|町役場|区役所|県庁|庁舎|警察署|消防署|郵便局|裁判所/.test(name)) return null;
+      if (/図書館|公民館|体育館|文化センター|福祉センター/.test(name)) return null;
+      if (/病院|医院|クリニック|診療所|歯科/.test(name)) return null;
+      if (/銀行|信用金庫|農協/.test(name)) return null;
+      if (/スーパー|ホームセンター|ショッピング|デパート|百貨店/.test(name)) return null;
+      if (/ホテル|旅館$/.test(name)) return null;
+      if (/^(小学校|中学校|高等学校|大学|駅|郵便局|警察署|消防署|病院|銀行)/.test(desc)) return null;
       return {
         lat: parseFloat(m[2]), lon: parseFloat(m[1]),
-        tags: { name },
-        source: 'wikidata',
-        name,
-        desc,
-        emotional: isEmotional,
-        id: 'wd-' + b.item.value,
+        tags: { name }, source: 'wikidata',
+        name, desc, id: 'wd-' + b.item.value,
       };
     }).filter(Boolean);
   } catch (e) { return []; }
 }
 
-// 国土地理院 地名検索（中心座標周辺）
-async function fetchGSI(lat, lon, r) {
-  try {
-    // 国土地理院の地名検索（簡易）：Wikipedia/Wikidataで十分カバーされるためスキップしてもよい
-    return [];
-  } catch (e) { return []; }
-}
-
-// しょぼいもの判定（本当にしょぼいもののみ）
+// ---- 判定関数 ----
 function isShoboi(s) {
   const t = s.tags || {};
-  if (t.amenity === 'vending_machine') return true;
-  if (t.amenity === 'telephone') return true;
-  if (t.amenity === 'toilets') return true;
-  if (t.amenity === 'bench') return true;
-  if (t.amenity === 'drinking_water') return true;
-  if (t.highway === 'steps') return true;
+  // ほぼなし。歩道橋・自販機などは元から拾わない設定にした
   return false;
 }
 
-// 感動枠判定（拡張：見落としがちなものも含む）
-function isEmotional(s) {
-  if (s.emotional || s.narrative) return true;
+function isHorror(s) {
   const t = s.tags || {};
-  // 歴史
-  if (t.historic === 'ruins') return true;
-  if (t.historic === 'archaeological_site') return true;
-  if (t.historic === 'tomb') return true;
-  if (t.historic === 'castle') return true;
+  const name = (s.name || t.name || '');
+  const desc = (s.desc || '');
+  if (HORROR_KEYWORDS.test(name + ' ' + desc)) return true;
+  if (t.historic === 'tomb' || t.historic === 'ruins') return true;
+  if (t.landuse === 'cemetery') return true;
+  if (t.abandoned || t.ruins || t.disused) return true;
+  if (t.railway === 'abandoned') return true;
+  if (t.man_made === 'mine_shaft' || t.man_made === 'adit') return true;
+  if (t.historic === 'memorial') return true;
+  return false;
+}
+
+function isEmotional(s) {
+  if (isHorror(s)) return true;
+  const t = s.tags || {};
+  const name = (s.name || t.name || '');
+  const desc = (s.desc || '');
+  if (EMOTION_KEYWORDS.test(name + ' ' + desc)) return true;
+  // 道端の小さなもの
   if (t.historic === 'wayside_shrine') return true;
   if (t.historic === 'memorial') return true;
   if (t.historic === 'monument') return true;
@@ -819,138 +522,80 @@ function isEmotional(s) {
   if (t.historic === 'boundary_stone') return true;
   if (t.historic === 'milestone') return true;
   if (t.historic === 'stone') return true;
-  // 道端の小さなもの
-  if (t.man_made === 'cross') return true;
-  if (t.man_made === 'stele') return true;
-  if (t.man_made === 'survey_point') return true;
+  if (t.historic === 'castle') return true;
+  if (t.historic === 'archaeological_site') return true;
+  if (t.historic === 'ruins') return true;
+  if (t.historic === 'tomb') return true;
+  if (t.man_made === 'cross' || t.man_made === 'stele') return true;
   // 自然
   if (t.natural === 'cave_entrance') return true;
   if (t.natural === 'spring') return true;
   if (t.natural === 'cliff') return true;
   if (t.natural === 'volcano') return true;
-  if (t.natural === 'geyser') return true;
-  if (t.natural === 'sinkhole') return true;
-  if (t.natural === 'tree' && (t.name || t.heritage || t.denotation)) return true;
-  if (t.natural === 'rock' && t.name) return true;
-  // アート・絶景
+  if (t.natural === 'tree') return true;
+  if (t.natural === 'rock' || t.natural === 'stone') return true;
+  if (t.natural === 'arch') return true;
+  if (t.waterway === 'waterfall') return true;
+  // 絶景・アート
   if (t.tourism === 'viewpoint') return true;
   if (t.tourism === 'artwork') return true;
   // 産業遺産
   if (t.man_made === 'lighthouse') return true;
   if (t.man_made === 'mine_shaft' || t.man_made === 'adit') return true;
-  if (t.man_made === 'kiln') return true;
   if (t.man_made === 'windmill' || t.man_made === 'watermill') return true;
-  if (t.man_made === 'water_tower') return true;
-  if (t.man_made === 'chimney') return true;
-  if (t.man_made === 'gasometer') return true;
+  if (t.man_made === 'kiln') return true;
   // 廃線・廃墟
   if (t.railway === 'abandoned') return true;
-  if (t.abandoned) return true;
-  if (t.disused) return true;
-  if (t.ruins) return true;
-  // 生活感・古い商店
+  if (t.abandoned || t.disused || t.ruins) return true;
+  // 生活感
   if (t.amenity === 'public_bath') return true;
-  if (t.shop === 'confectionery') return true; // 駄菓子屋
-  if (t.shop === 'hardware') return true; // 金物屋
-  if (t.shop === 'newsagent') return true;
-  if (t.shop === 'tobacco') return true;
-  if (t.craft) return true; // 職人系
-  if (t.shop === 'convenience' && !t.brand) return true; // 個人経営コンビニ
+  if (t.shop === 'confectionery' || t.shop === 'tobacco' || t.shop === 'hardware') return true;
+  if (t.craft) return true;
+  // 地蔵堂可能性大（仏教系の小さい寺）
+  if (t.amenity === 'place_of_worship' && t.religion === 'buddhist') return true;
   // 古地名
   if (t.place === 'locality' || t.place === 'hamlet' || t.place === 'isolated_dwelling') return true;
-  // ソース
-  if (s.source === 'wikipedia') return true;
   return false;
 }
 
-// 恐怖枠判定
-function isHorror(s) {
-  const t = s.tags || {};
-  const name = (s.name || t.name || '').toString();
-  const desc = (s.desc || '').toString();
-  const text = name + ' ' + desc;
-  // キーワード判定
-  if (/血|鬼|呪|死|首|怨|霊|怪|妖|幽|地獄|墓|塚|供養|処刑|刑場|無縁/.test(text)) return true;
-  // OSMタグ
-  if (t.historic === 'tomb') return true;
-  if (t.historic === 'ruins') return true;
-  if (t.landuse === 'cemetery') return true;
-  if (t.abandoned) return true;
-  if (t.ruins) return true;
-  if (t.railway === 'abandoned') return true;
-  if (t.man_made === 'mine_shaft' || t.man_made === 'adit') return true;
-  return false;
-}
-
-// モード別距離（恐怖モードは大幅拡張）
 function getRadius() {
-  if (horror) {
-    return mode === 'foot' ? 5000 : mode === 'bike' ? 15000 : 30000;
-  }
-  return MODE_RADIUS[mode] || 1500;
+  if (horror) return mode === 'foot' ? 5000 : mode === 'bike' ? 20000 : 50000;
+  return MODE_RADIUS[mode];
 }
 
-// 全部取得＆統合
 async function fetchAllSpots(lat, lon) {
   const r = getRadius();
-  const [osm, wp, wd] = await Promise.all([
-    fetchOSM(lat, lon, r),
-    fetchWikipedia(lat, lon, r),
-    fetchWikidata(lat, lon, r),
-  ]);
-  let all = [...osm, ...wp, ...wd];
+  const [osm, wd] = await Promise.all([fetchOSM(lat, lon, r), fetchWikidata(lat, lon, r)]);
+  let all = [...osm, ...wd];
   all = all
     .map(s => ({ ...s, distance: haversine(lat, lon, s.lat, s.lon) }))
     .filter(s => s.distance > 50)
     .filter(s => !badReports.includes(s.id))
-    .filter(s => !recentPicks.includes(s.id)); // 連続防止
+    .filter(s => !recentPicks.includes(s.id));
 
   if (horror) {
-    // 恐怖モード：心霊系のみ
     all = all.filter(isHorror);
   } else if (emotion) {
     all = all.filter(isEmotional);
-  } else if (mania) {
-    all = all.filter(s => {
-      if (s.source === 'wikipedia') return false;
-      if (s.source === 'wikidata' && s.desc && !s.emotional) return false;
-      if (s.source === 'osm') {
-        if (s.tags?.tourism === 'attraction') return false;
-        if (s.tags?.historic === 'castle' && s.tags?.name) return false;
-      }
-      return true;
-    });
-  } else {
-    all = all.filter(s => !isShoboi(s) || Math.random() < 0.05);
   }
-
   return all;
 }
 
-// マイナー優先 & 感動優先 & 遠距離優先の重み付け選択
 function weightedPick(spots) {
-  // モード別の最小距離（これ以下は重み激減）
   const minDist = mode === 'foot' ? 100 : mode === 'bike' ? 1500 : 7000;
   const idealDist = mode === 'foot' ? 800 : mode === 'bike' ? 3000 : 12000;
 
   const weights = spots.map(s => {
     let w = 1.0;
-    // 最小距離以下は強くペナルティ
     if (s.distance < minDist) w *= 0.05;
-    // 理想距離に近いほど有利（ガウシアン的）
     const ratio = s.distance / idealDist;
-    if (ratio < 1) w *= ratio; // 短すぎはダメ
-    else w *= 1.0 / (1 + (ratio - 1) * 0.5); // 長すぎも少し減
+    if (ratio < 1) w *= ratio;
+    else w *= 1.0 / (1 + (ratio - 1) * 0.3);
 
-    if (isHorror(s)) w *= horror ? 5 : 1;
+    if (isHorror(s)) w *= 3;
     if (isEmotional(s)) w *= 4;
-    if (isShoboi(s)) w *= 0.1;
     if (!s.tags?.name && !s.name) w *= 1.5;
-    if (s.source === 'wikipedia') w *= 0.5;
-    if (s.tags?.tourism === 'attraction') w *= 0.3;
-    if (s.tags?.historic === 'castle' && s.tags?.name) w *= 0.4;
-    if (s.narrative) w *= 5;
-    return w;
+    return Math.max(w, 0.01);
   });
   const total = weights.reduce((a, b) => a + b, 0);
   let r = Math.random() * total;
@@ -964,24 +609,11 @@ function weightedPick(spots) {
 // ---- 到着演出 ----
 async function showReveal() {
   if (watchId) navigator.geolocation.clearWatch(watchId);
-
-  const modal = document.getElementById('reveal-modal');
-  document.getElementById('reveal-icon').textContent = getIcon(spotTags, spotSource);
-  document.getElementById('reveal-name').textContent = getLabel(spotTags, spotName, spotSource);
-  document.getElementById('reveal-cat').textContent = getCategory(spotTags, spotSource);
-
-  // 説明文取得
-  let desc = spotDesc || spotTags?.description || spotTags?.note || '';
-  if (!desc && spotSource === 'wikipedia') {
-    desc = await fetchWikipediaExtract(spotName);
-  }
-  if (desc) {
-    document.getElementById('reveal-desc').textContent = desc.length > 200 ? desc.slice(0, 200) + '…' : desc;
-  } else {
-    document.getElementById('reveal-desc').textContent = '';
-  }
-
-  modal.classList.add('show');
+  document.getElementById('reveal-icon').textContent = getIcon(chosen);
+  document.getElementById('reveal-name').textContent = getLabel(chosen);
+  document.getElementById('reveal-cat').textContent = getCategory(chosen);
+  document.getElementById('reveal-desc').textContent = spotDesc || spotTags?.description || spotTags?.note || '';
+  document.getElementById('reveal-modal').classList.add('show');
 }
 
 // ---- メイン ----
@@ -990,6 +622,7 @@ async function go() {
   arrived = false;
   setBtn('loading', '現在地を取得中');
   document.getElementById('dist-badge').classList.remove('show');
+  document.getElementById('debug-panel').style.display = 'none';
 
   const loc = await new Promise((res, rej) => {
     if (!navigator.geolocation) { rej('位置情報未対応'); return; }
@@ -1005,7 +638,6 @@ async function go() {
   map.setView([loc.lat, loc.lon], 15);
 
   setBtn('loading', '謎の地を探す');
-
   let elements;
   try {
     elements = await fetchAllSpots(loc.lat, loc.lon);
@@ -1016,58 +648,35 @@ async function go() {
   }
 
   if (elements.length === 0) {
-    showError('この地には謎が見つからない');
+    showError('この地に謎は無し');
     setBtn('ready', 'どこか連れてって');
     return;
   }
 
   spots = elements;
   const pick = weightedPick(spots);
-  recentPicks.push(pick.id);
-  if (recentPicks.length > 30) recentPicks.shift();
-  localStorage.setItem('recentPicks', JSON.stringify(recentPicks));
   chosen = pick;
   spotLat = pick.lat; spotLon = pick.lon; spotTags = pick.tags;
   spotName = pick.name; spotDesc = pick.desc; spotSource = pick.source;
 
+  recentPicks.push(pick.id);
+  if (recentPicks.length > 30) recentPicks.shift();
+  localStorage.setItem('recentPicks', JSON.stringify(recentPicks));
+
   if (destMarker) map.removeLayer(destMarker);
   destMarker = L.marker([spotLat, spotLon], { icon: destIcon }).addTo(map);
 
-  // デバッグパネル表示
-  const debugName = getLabel(spotTags, spotName, spotSource);
-  const debugCat = getCategory(spotTags, spotSource);
-  document.getElementById('debug-name').textContent = debugName;
-  document.getElementById('debug-meta').textContent = `${debugCat} · ${spotSource}`;
-
-  // Wikipediaリンク
-  const wikiLink = document.getElementById('debug-wiki');
-  if (spotSource === 'wikipedia' && spotName) {
-    wikiLink.href = `https://ja.wikipedia.org/wiki/${encodeURIComponent(spotName)}`;
-    wikiLink.textContent = 'Wikipedia ↗';
-    wikiLink.style.display = 'inline-block';
-  } else if (spotSource === 'wikidata' && chosen.id) {
-    const wdId = chosen.id.replace('wd-http://www.wikidata.org/entity/', '');
-    wikiLink.href = `https://www.wikidata.org/wiki/${wdId}`;
-    wikiLink.textContent = 'Wikidata ↗';
-    wikiLink.style.display = 'inline-block';
-  } else {
-    wikiLink.href = `https://ja.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(debugName)}`;
-    wikiLink.textContent = 'Wiki検索 ↗';
-    wikiLink.style.display = 'inline-block';
-  }
-
-  // Googleマップリンク
-  document.getElementById('debug-gmap').href =
-    `https://maps.google.com/?q=${spotLat},${spotLon}`;
-
+  // デバッグ
+  document.getElementById('debug-name').textContent = getLabel(pick);
+  document.getElementById('debug-meta').textContent = `${getCategory(pick)} · ${spotSource} · ${pick.distance}m`;
+  document.getElementById('debug-gmap').href = `https://maps.google.com/?q=${spotLat},${spotLon}`;
   document.getElementById('debug-panel').style.display = 'block';
 
   setBtn('loading', '道筋を編む');
-  try {
-    await drawRoute(loc.lat, loc.lon, spotLat, spotLon);
-  } catch (e) {
-    const bounds = L.latLngBounds([loc.lat, loc.lon], [spotLat, spotLon]);
-    map.fitBounds(bounds, { padding: [80, 80] });
+  try { await drawRoute(loc.lat, loc.lon, spotLat, spotLon); }
+  catch (e) {
+    const b = L.latLngBounds([loc.lat, loc.lon], [spotLat, spotLon]);
+    map.fitBounds(b, { padding: [80, 80] });
   }
 
   updateDistBadge(loc.lat, loc.lon);
@@ -1077,12 +686,10 @@ async function go() {
   watchId = navigator.geolocation.watchPosition(
     p => {
       updateSelf(p.coords.latitude, p.coords.longitude);
-      if (!map.getBounds().contains([p.coords.latitude, p.coords.longitude])) {
+      if (!map.getBounds().contains([p.coords.latitude, p.coords.longitude]))
         map.panTo([p.coords.latitude, p.coords.longitude]);
-      }
     },
-    null,
-    { enableHighAccuracy: true }
+    null, { enableHighAccuracy: true }
   );
 }
 
@@ -1109,7 +716,6 @@ document.getElementById('go-btn').addEventListener('click', () => {
   if (document.getElementById('go-btn').className === 'loading') return;
   go();
 });
-
 document.getElementById('reveal-again').addEventListener('click', reset);
 document.getElementById('reveal-bad').addEventListener('click', reportBad);
 
@@ -1121,26 +727,17 @@ document.querySelectorAll('.mode-btn[data-mode]').forEach(btn => {
   });
 });
 
-document.getElementById('mania-btn').addEventListener('click', () => {
-  mania = !mania;
-  if (mania) { emotion = false; horror = false; }
-  updateModeBtns();
-});
-
 document.getElementById('emotion-btn').addEventListener('click', () => {
   emotion = !emotion;
-  if (emotion) { mania = false; horror = false; }
+  if (emotion) horror = false;
   updateModeBtns();
 });
-
 document.getElementById('horror-btn').addEventListener('click', () => {
   horror = !horror;
-  if (horror) { mania = false; emotion = false; }
+  if (horror) emotion = false;
   updateModeBtns();
 });
-
 function updateModeBtns() {
-  document.getElementById('mania-btn').classList.toggle('active', mania);
   document.getElementById('emotion-btn').classList.toggle('active', emotion);
   document.getElementById('horror-btn').classList.toggle('active', horror);
 }
