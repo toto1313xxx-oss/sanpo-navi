@@ -84,11 +84,9 @@ body::before{
   -webkit-appearance:none;
   transition:all 0.3s;
 }
-/* 移動手段モード */
 #scr-title .mode-row:nth-of-type(1) .mode-btn:nth-child(1){ border-radius: 40% 60% 50% 30% / 35% 55% 40% 60%; }
 #scr-title .mode-row:nth-of-type(1) .mode-btn:nth-child(2){ border-radius: 55% 45% 35% 65% / 50% 60% 30% 50%; }
 #scr-title .mode-row:nth-of-type(1) .mode-btn:nth-child(3){ border-radius: 45% 50% 60% 40% / 40% 35% 55% 50%; }
-/* カテゴリモード */
 #scr-title .mode-row:nth-of-type(2) .mode-btn:nth-child(1){ border-radius: 50% 40% 60% 50% / 45% 55% 35% 50%; }
 #scr-title .mode-row:nth-of-type(2) .mode-btn:nth-child(2){ border-radius: 40% 55% 45% 60% / 55% 40% 60% 35%; }
 #scr-title .mode-row:nth-of-type(2) .mode-btn:nth-child(3){ border-radius: 60% 45% 50% 40% / 35% 50% 45% 60%; }
@@ -237,7 +235,7 @@ body::before{
   width:100%; aspect-ratio:3/4; background:#3a2818;
   position:relative; overflow:hidden; margin-bottom:20px;
 }
-#cam-preview { width:100%; height:100%; object-fit:cover; display:block; }
+#cam-video, #cam-preview { width:100%; height:100%; object-fit:cover; display:block; }
 .viewfinder.empty::before{
   content:""; position:absolute; inset:0;
   background:
@@ -245,7 +243,7 @@ body::before{
     linear-gradient(135deg, #8a6a48 0%, #5a3f28 60%, #2b1d12 100%);
 }
 .viewfinder.empty::after{
-  content:"撮影"; position:absolute; inset:0;
+  content:"カメラ起動中…"; position:absolute; inset:0;
   display:flex; align-items:center; justify-content:center;
   color:rgba(244,227,196,0.4); font-size:14px; letter-spacing:0.4em;
 }
@@ -253,6 +251,7 @@ body::before{
   position:absolute; bottom:14px; right:14px;
   font-size:14px; font-weight:600; color:#ffb360;
   letter-spacing:0.1em; text-shadow:0 1px 3px rgba(0,0,0,0.8);
+  z-index:2;
 }
 
 .filter-label{ font-size:13px; font-weight:600; color:#f4e3c4; letter-spacing:0.2em; margin-bottom:10px; }
@@ -286,6 +285,7 @@ body::before{
   box-shadow:0 0 0 2px #f4e3c4; cursor:pointer;
   -webkit-appearance:none;
 }
+.shutter:disabled { opacity:0.4; cursor:not-allowed; }
 .cam-side-btn{
   min-width:80px; padding:14px 16px;
   background:transparent; border:1.5px solid #f4e3c4;
@@ -293,9 +293,8 @@ body::before{
   font-weight:600; letter-spacing:0.15em; cursor:pointer;
   -webkit-appearance:none;
 }
-#cam-save{ border-radius: 45% 55% 50% 50% / 50% 45% 55% 50%; }
+#cam-share{ border-radius: 45% 55% 50% 50% / 50% 45% 55% 50%; }
 #cam-redo{ border-radius: 55% 45% 50% 50% / 50% 55% 45% 50%; }
-#cam-file-input { display:none; }
 
 /* ====== 画面5: 記録 ====== */
 #scr-sum { padding:60px 28px 24px; }
@@ -373,6 +372,16 @@ body::before{
   text-align:center; line-height:1.6;
 }
 .error-msg.show { display:block; }
+
+/* トースト */
+.toast{
+  position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+  background:rgba(26,24,20,0.92); color:var(--paper);
+  padding:12px 24px; font-size:14px; letter-spacing:0.15em;
+  z-index:100; opacity:0; transition:opacity 0.3s;
+  border:1px solid var(--vermilion); pointer-events:none;
+}
+.toast.show{ opacity:1; }
 </style>
 </head>
 <body>
@@ -519,6 +528,7 @@ body::before{
   </div>
 
   <div class="viewfinder empty" id="viewfinder">
+    <video id="cam-video" autoplay playsinline muted style="display:none;"></video>
     <img id="cam-preview" style="display:none;" />
     <div class="vf-date" id="vf-date">2026.5.21</div>
   </div>
@@ -533,11 +543,10 @@ body::before{
   </div>
 
   <div class="shutter-bar">
-    <button class="cam-side-btn" id="cam-save">保 存</button>
+    <button class="cam-side-btn" id="cam-share">共 有</button>
     <button class="shutter" id="cam-shutter"></button>
     <button class="cam-side-btn" id="cam-redo">撮 直 し</button>
   </div>
-  <input type="file" id="cam-file-input" accept="image/*" capture="environment">
 </div>
 
 <!-- ====== 画面5: 記録 ====== -->
@@ -580,6 +589,8 @@ body::before{
     <button class="icon-btn" id="sum-reset">記録消去</button>
   </div>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <script>
 // グローバルでデバッグトグル関数を定義
@@ -626,6 +637,14 @@ const DIST_CONFIG = {
 };
 const OSRM_PROFILE = { foot:'foot', bike:'bike', car:'driving' };
 const MODE_LABELS = { foot:'徒 歩', bike:'自 転 車', car:'車' };
+
+const FILTERS = {
+  none: 'none',
+  amber: 'sepia(0.6) saturate(1.2) hue-rotate(-10deg) brightness(1.05)',
+  ink: 'grayscale(1) contrast(1.3) brightness(0.85)',
+  fade: 'saturate(0.5) brightness(1.1) contrast(0.9)',
+  blueprint: 'grayscale(1) sepia(1) hue-rotate(180deg) saturate(3) contrast(1.1)'
+};
 
 const STORIES = {
   ankyo: { name:'暗 渠', sub:'水脈系・失われた川',
@@ -751,7 +770,6 @@ let dailyRecord = JSON.parse(localStorage.getItem('dailyRecord') || JSON.stringi
   photos: [],
   cats: []
 }));
-// 日付が変わってたらリセット
 if (dailyRecord.date !== new Date().toDateString()) {
   dailyRecord = { date: new Date().toDateString(), startTime: null, totalDist: 0, arrivals: 0, photos: [], cats: [] };
   localStorage.setItem('dailyRecord', JSON.stringify(dailyRecord));
@@ -764,10 +782,23 @@ let lastUserPos = null;
 let currentFilter = 'none';
 let debugMode = localStorage.getItem('debugMode') === 'true';
 
+// カメラ関連
+let cameraStream = null;
+let capturedBlob = null;
+let capturedDataUrl = null;
+
 // ========= 画面切替 =========
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+}
+
+// ========= トースト =========
+function showToast(msg, duration = 2000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
 }
 
 // ========= 地図 =========
@@ -797,16 +828,13 @@ function classify(s) {
   const t = s.tags || {};
   const name = (s.name || t.name || '');
 
-  // Wikidata由来は怪異強化分なので無条件で怪異
   if (s.source === 'wikidata') return 'horror';
 
-  // 怪異
   if (t.historic === 'tomb' || t.landuse === 'cemetery' || t.amenity === 'grave_yard') return 'horror';
   if (t.man_made === 'mine_shaft' || t.man_made === 'adit') return 'horror';
   if (t.natural === 'cave_entrance') return 'horror';
   if (/血|鬼|呪|死|首|怨|霊|怪|妖|幽|地獄|供養|無縁|塚|骨|魔|処刑|刑場|怪談/.test(name)) return 'horror';
 
-  // 違和感（disused/abandoned/wasの「機能を失ったもの」を強化）
   if (t['disused:amenity'] === 'school' || t['abandoned:amenity'] === 'school') return 'normal';
   if (t['disused:railway'] === 'station' || t['abandoned:railway'] === 'station') return 'normal';
   if (t['disused:industrial'] || t['abandoned:industrial']) return 'normal';
@@ -814,7 +842,6 @@ function classify(s) {
   if (t.abandoned || t.ruins || t.disused || t.historic === 'ruins') return 'normal';
   if (t.railway === 'abandoned' || t.railway === 'disused') return 'normal';
 
-  // 詩情
   if (t.waterway === 'waterfall' || t.natural === 'spring') return 'emotion';
   if (t.waterway === 'canal' || t.waterway === 'stream') return 'emotion';
   if (t.natural === 'tree') return 'emotion';
@@ -823,7 +850,6 @@ function classify(s) {
   if (t.historic === 'wayside_shrine' || t.historic === 'wayside_cross') return 'emotion';
   if (t.amenity === 'place_of_worship') return 'emotion';
   if (t.natural === 'rock' || t.natural === 'stone') return 'emotion';
-  // 新規追加：ベンチ・小さな橋・銭湯・カフェ・駄菓子・古書・職人・並木・池・季節
   if (t.amenity === 'bench') return 'emotion';
   if (t.man_made === 'bridge' || (t.bridge === 'yes' && t.highway === 'footway')) return 'emotion';
   if (t.amenity === 'public_bath') return 'emotion';
@@ -842,7 +868,6 @@ function classify(s) {
 function getStory(s) {
   const t = s.tags || {};
   const name = (s.name || t.name || '');
-  // 季節キーワード優先
   if (/桜|紅葉|蛍|梅|椿|藤|花見/.test(name)) return STORIES.kisetsu;
 
   if (t.tunnel === 'culvert') return STORIES.ankyo;
@@ -931,7 +956,7 @@ out center;`;
   return [];
 }
 
-// ========= Wikidata（怪異強化用） =========
+// ========= Wikidata =========
 async function fetchWikidataHorror(lat, lon, r) {
   const km = Math.min(r / 1000, 30);
   const sparql = `
@@ -982,13 +1007,12 @@ function isExcluded(s) {
        'school','university','college','kindergarten','library',
        'hospital','clinic','dentist','pharmacy','doctors',
        'bank','atm','parking','fuel','charging_station'].includes(t.amenity)) return true;
-  // チェーン店除外（個人経営のみ詩情扱いにしたい）
   if (t.brand) return true;
   if (/スタバ|スターバックス|ドトール|タリーズ|コメダ|サンマルク|ベローチェ|エクセルシオール|モスバーガー|マクドナルド|ローソン|セブン|ファミリーマート|ミニストップ/.test(t.name || '')) return true;
   return false;
 }
 
-// ========= ナビ ヒントメッセージ =========
+// ========= ナビ ヒント =========
 function getHint(d, story) {
   const cat = story === STORIES.ankyo ? '水' :
               story === STORIES.tree ? '緑' :
@@ -1044,7 +1068,6 @@ async function startJourney() {
       return;
     }
 
-    // 理想距離重み付け
     const ideal = (cfg.min + cfg.max) / 2;
     const weights = list.map(s => {
       const r = s.dist / ideal;
@@ -1084,13 +1107,11 @@ async function startJourney() {
 async function drawNavigation() {
   document.getElementById('nav-mode-tag').textContent = MODE_LABELS[mode];
 
-  // マーカー
   if (selfMarker) map.removeLayer(selfMarker);
   selfMarker = L.marker([userLat, userLon], { icon:selfIconObj }).addTo(map);
   if (destMarker) map.removeLayer(destMarker);
   destMarker = L.marker([spotLat, spotLon], { icon:destIconObj }).addTo(map);
 
-  // ルート
   if (routeLayer) map.removeLayer(routeLayer);
   document.getElementById('nav-loading').classList.add('show');
   try {
@@ -1109,7 +1130,6 @@ async function drawNavigation() {
   }
   document.getElementById('nav-loading').classList.remove('show');
 
-  // デバッグパネル（常時表示）
   const story = getStory(chosenSpot);
   const t = chosenSpot.tags || {};
   const realName = t.name || t['name:ja'] || '（名前なし）';
@@ -1121,7 +1141,6 @@ async function drawNavigation() {
 
   updateDistance(userLat, userLon);
 
-  // 追跡開始
   if (watchId) navigator.geolocation.clearWatch(watchId);
   watchId = navigator.geolocation.watchPosition(p => {
     const newLat = p.coords.latitude, newLon = p.coords.longitude;
@@ -1156,7 +1175,6 @@ function arrive() {
 
   document.getElementById('arr-cat-ja').textContent = story.name;
   document.getElementById('arr-cat-sub').textContent = story.sub || story.sup || '';
-  // テキスト整形（{em}...{/em}を span に）
   const html = story.text
     .replace(/\{em\}/g, '<span class="em">')
     .replace(/\{\/em\}/g, '</span>');
@@ -1171,7 +1189,6 @@ function arrive() {
     facts.appendChild(el);
   });
 
-  // 稀少度（仮：カテゴリ別に変化）
   const rarity = category === 'horror' ? ['稀','◆ ◆ ◇'] :
                  category === 'emotion' ? ['地域固有','◆ ◇ ◇'] :
                  ['日常の影','◇ ◇ ◇'];
@@ -1182,77 +1199,201 @@ function arrive() {
   showScreen('scr-arr');
 }
 
-// ========= 撮影 =========
-function openCamera() {
+// ========= 撮影（getUserMedia版） =========
+async function openCamera() {
   const story = getStory(chosenSpot);
   document.getElementById('cam-cat').textContent = story.name;
   const now = new Date();
   document.getElementById('vf-date').textContent = `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()}`;
-  // 前回の写真をクリア
-  document.getElementById('cam-preview').style.display = 'none';
-  document.getElementById('viewfinder').classList.add('empty');
+
+  // UIリセット
+  const video = document.getElementById('cam-video');
+  const preview = document.getElementById('cam-preview');
+  const vf = document.getElementById('viewfinder');
+  preview.style.display = 'none';
+  preview.src = '';
+  video.style.display = 'none';
+  vf.classList.add('empty');
+  vf.style.filter = FILTERS[currentFilter] || 'none';
+  document.getElementById('cam-shutter').disabled = true;
+  capturedBlob = null;
+  capturedDataUrl = null;
+
   showScreen('scr-cam');
+
+  // HTTPSチェック
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    showToast('カメラはHTTPS環境でのみ動作します');
+    return;
+  }
+
+  // カメラ起動
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1440 } },
+      audio: false
+    });
+    video.srcObject = cameraStream;
+    video.style.display = 'block';
+    vf.classList.remove('empty');
+    document.getElementById('cam-shutter').disabled = false;
+  } catch (e) {
+    console.error('Camera error:', e);
+    if (e.name === 'NotAllowedError') {
+      showToast('カメラの使用が拒否されました');
+    } else if (e.name === 'NotFoundError') {
+      showToast('カメラが見つかりませんでした');
+    } else {
+      showToast('カメラを起動できませんでした');
+    }
+  }
+}
+
+function closeCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  const video = document.getElementById('cam-video');
+  video.srcObject = null;
 }
 
 function applyFilter(filterName) {
   currentFilter = filterName;
-  const img = document.getElementById('cam-preview');
-  const filters = {
-    none: 'none',
-    amber: 'sepia(0.6) saturate(1.2) hue-rotate(-10deg) brightness(1.05)',
-    ink: 'grayscale(1) contrast(1.3) brightness(0.85)',
-    fade: 'saturate(0.5) brightness(1.1) contrast(0.9)',
-    blueprint: 'grayscale(1) sepia(1) hue-rotate(180deg) saturate(3) contrast(1.1)'
-  };
-  img.style.filter = filters[filterName] || 'none';
+  const vf = document.getElementById('viewfinder');
+  vf.style.filter = FILTERS[filterName] || 'none';
 }
 
-document.getElementById('cam-shutter').addEventListener('click', () => {
-  document.getElementById('cam-file-input').click();
-});
+// 撮影：videoのフレームをcanvasに焼き込み（フィルター込み）
+async function capturePhoto() {
+  const video = document.getElementById('cam-video');
+  if (!video || !video.videoWidth) {
+    showToast('カメラが準備できていません');
+    return;
+  }
 
-document.getElementById('cam-file-input').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const img = document.getElementById('cam-preview');
-    img.src = ev.target.result;
-    img.style.display = 'block';
-    document.getElementById('viewfinder').classList.remove('empty');
-    applyFilter(currentFilter);
-  };
-  reader.readAsDataURL(file);
-});
-
-document.getElementById('cam-save').addEventListener('click', () => {
-  const img = document.getElementById('cam-preview');
-  if (img.style.display === 'none' || !img.src) return;
-  // フィルタ適用済み画像を保存
   const canvas = document.createElement('canvas');
-  const tempImg = new Image();
-  tempImg.onload = () => {
-    canvas.width = 400;
-    canvas.height = 400 * (tempImg.height / tempImg.width);
-    const ctx = canvas.getContext('2d');
-    ctx.filter = img.style.filter;
-    ctx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
-    const dataURL = canvas.toDataURL('image/jpeg', 0.7);
-    dailyRecord.photos.push(dataURL);
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+
+  // フィルターを焼き込む
+  ctx.filter = FILTERS[currentFilter] || 'none';
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  // BlobとdataURLを生成
+  capturedBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
+  capturedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+  // プレビュー表示
+  const preview = document.getElementById('cam-preview');
+  preview.src = capturedDataUrl;
+  preview.style.display = 'block';
+  video.style.display = 'none';
+
+  // dailyRecordに保存（縮小版）
+  saveToRecord(canvas);
+
+  // カメラ停止
+  closeCamera();
+
+  navigator.vibrate?.(50);
+  showToast('撮影しました');
+}
+
+// 縮小版をlocalStorageに保存
+function saveToRecord(sourceCanvas) {
+  const thumb = document.createElement('canvas');
+  const maxSize = 400;
+  const ratio = Math.min(maxSize / sourceCanvas.width, maxSize / sourceCanvas.height);
+  thumb.width = sourceCanvas.width * ratio;
+  thumb.height = sourceCanvas.height * ratio;
+  const tctx = thumb.getContext('2d');
+  tctx.drawImage(sourceCanvas, 0, 0, thumb.width, thumb.height);
+  const thumbUrl = thumb.toDataURL('image/jpeg', 0.7);
+  dailyRecord.photos.push(thumbUrl);
+  try {
     localStorage.setItem('dailyRecord', JSON.stringify(dailyRecord));
-    alert('保存しました');
-  };
-  tempImg.src = img.src;
-});
+  } catch (e) {
+    // QuotaExceeded: 古い写真を削って再試行
+    while (dailyRecord.photos.length > 1) {
+      dailyRecord.photos.shift();
+      try {
+        localStorage.setItem('dailyRecord', JSON.stringify(dailyRecord));
+        showToast('保存容量制限のため古い写真を削除しました');
+        return;
+      } catch (e2) {}
+    }
+    showToast('保存できませんでした');
+  }
+}
 
-document.getElementById('cam-redo').addEventListener('click', () => {
-  document.getElementById('cam-file-input').click();
-});
+// SNS共有
+async function sharePhoto() {
+  if (!capturedBlob) {
+    showToast('まず撮影してください');
+    return;
+  }
 
+  const story = getStory(chosenSpot);
+  const filename = `yuro_${Date.now()}.jpg`;
+  const file = new File([capturedBlob], filename, { type: 'image/jpeg' });
+  const text = `${story.name}に辿り着いた #幽路`;
+
+  // Web Share API（ファイル対応）
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({
+        files: [file],
+        text: text,
+        title: '幽路'
+      });
+      return;
+    } catch (e) {
+      // ユーザーがキャンセル
+      if (e.name === 'AbortError') return;
+      console.warn('Share failed, falling back:', e);
+    }
+  }
+
+  // フォールバック：ダウンロード + テキストをクリップボードへ
+  try {
+    const a = document.createElement('a');
+    a.href = capturedDataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(text);
+      showToast('画像を保存・テキストをコピーしました');
+    } else {
+      showToast('画像を保存しました');
+    }
+  } catch (e) {
+    showToast('共有に失敗しました');
+  }
+}
+
+// 撮り直し
+function retakePhoto() {
+  capturedBlob = null;
+  capturedDataUrl = null;
+  const preview = document.getElementById('cam-preview');
+  preview.src = '';
+  preview.style.display = 'none';
+  openCamera();
+}
+
+// イベント
+document.getElementById('cam-shutter').addEventListener('click', capturePhoto);
+document.getElementById('cam-share').addEventListener('click', sharePhoto);
+document.getElementById('cam-redo').addEventListener('click', retakePhoto);
 document.getElementById('cam-close').addEventListener('click', () => {
+  closeCamera();
   showScreen('scr-arr');
 });
-
 document.getElementById('arr-camera').addEventListener('click', openCamera);
 
 document.querySelectorAll('#filter-strip .filter').forEach(f => {
@@ -1332,9 +1473,14 @@ document.getElementById('nav-back').addEventListener('click', () => {
 function resetForNew() {
   arrived = false;
   chosenSpot = null;
+  closeCamera();
   if (destMarker && map) { map.removeLayer(destMarker); destMarker = null; }
   if (routeLayer && map) { map.removeLayer(routeLayer); routeLayer = null; }
 }
+
+// ページ離脱時にカメラ停止
+window.addEventListener('beforeunload', closeCamera);
+window.addEventListener('pagehide', closeCamera);
 
 // ========= タイトル画面のモード切替 =========
 document.querySelectorAll('.mode-btn[data-mode]').forEach(b => {
