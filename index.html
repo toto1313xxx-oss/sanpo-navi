@@ -637,6 +637,45 @@ const STORIES = {
   haikyo: { name:'廃 墟', sub:'止まった時間',
     text:'人の生活が\n突然停止した場所。\n\n残された日用品の配置に、\n{em}止まった時間{/em}が\n結晶化している。',
     facts:['廃墟','止まった時間'] },
+  bench: { name:'ベ ン チ', sub:'誰かのための空白',
+    text:'誰かが座るために、\nそこに置かれた板。\n\n今は誰も座っていないが、\n{em}誰かが座った{/em}という\n気配だけが残る。',
+    facts:['止水','間'] },
+  bridge: { name:'小 さ な 橋', sub:'此岸と彼岸の継ぎ目',
+    text:'流れを跨ぐ、\n小さな継ぎ目。\n\nここを渡れば、\n{em}向こう側{/em}に行ける。\nそれだけの理由で\n人は橋を架け続けてきた。',
+    facts:['境界','継ぎ目'] },
+  cafe: { name:'個 人 喫 茶', sub:'手仕事の灯',
+    text:'チェーンには無い、\n{em}誰かの手{/em}が\n選んだ器、\n選んだ豆、\n選んだ椅子。\n\n窓辺に座れば、\n時間の流れがゆるむ。',
+    facts:['手仕事','一人の店主'] },
+  sento: { name:'銭 湯', sub:'湯気の境界',
+    text:'タイル張りの脱衣所、\n富士山のペンキ絵。\n\nここでは、\n誰もが平等に、\n{em}裸{/em}に戻る。',
+    facts:['手仕事','古い文化'] },
+  dagashi: { name:'駄 菓 子 屋', sub:'子どもの聖域',
+    text:'十円玉を握りしめて、\n何時間でも悩めた場所。\n\n大人になっても、\nこの引き戸の向こうには、\n{em}小さな自由{/em}が\nまだ残っている。',
+    facts:['手仕事','子供時代'] },
+  kosho: { name:'古 書 店', sub:'紙の墓所',
+    text:'本の背表紙が、\n壁を埋め尽くしている。\n\n誰かが読み、\n誰かが手放した本。\n{em}言葉の死骸{/em}が\n次の読み手を待つ。',
+    facts:['手仕事','時の堆積'] },
+  shokunin: { name:'職 人 の 店', sub:'消えゆく手',
+    text:'機械では作れぬものが、\nまだここで作られている。\n\n{em}人の手の温度{/em}が、\n商品の隅々に残る。',
+    facts:['手仕事','失われゆく技'] },
+  namiki: { name:'並 木 道', sub:'光と影の通路',
+    text:'同じ種類の木が、\n並んで道を縁取る。\n\n夏は緑のトンネル、\n秋は色の絨毯、\n{em}季節の通路{/em}として\n道は呼吸する。',
+    facts:['季節','光'] },
+  ike: { name:'池', sub:'水鏡',
+    text:'動かぬ水面。\n\n空と地上を{em}入れ替えて{/em}\n映し出す鏡。\nここでは時間が\n止まったように見える。',
+    facts:['水鏡','止水'] },
+  kisetsu: { name:'季 節 の 名 所', sub:'時を待つ場所',
+    text:'桜、紅葉、蛍、梅。\n\n{em}年に数日{/em}だけ\n姿を変える場所。\n知る者だけが、\nその刻に訪れる。',
+    facts:['季節','一年の境界'] },
+  haikou: { name:'廃 校 跡', sub:'消えた笑い声',
+    text:'かつて子どもの声が\nここで響いていた。\n\n今は校庭の鉄棒だけが、\n{em}主のいない{/em}まま\n錆びていく。',
+    facts:['消えた施設','時の沈黙'] },
+  haieki: { name:'廃 駅', sub:'降りる人のない停車場',
+    text:'列車はもう来ない。\n\n剥がれかけのホーム、\n読めなくなった行き先表示。\n{em}誰のためでもない{/em}\n停車場が残る。',
+    facts:['消えた施設','時の沈黙'] },
+  haikojo: { name:'廃 工 場', sub:'機械の墓',
+    text:'機械の音が止んだ場所。\n\n錆びた鉄骨と\n割れた窓ガラスの向こうに、\n{em}働いていた人々{/em}の\n気配だけが残る。',
+    facts:['消えた施設','産業の跡'] },
   default: { name:'境 界 の 地', sub:'識別不能',
     text:'現世の合理的な開発から、\n奇跡的にこぼれ落ちた、\n{em}時間線の空白地帯{/em}。\n\n土地の記憶だけが、\nこの空間に静かに息づいている。',
     facts:['空白','土地の記憶'] }
@@ -700,13 +739,22 @@ function haversine(lat1, lon1, lat2, lon2) {
 function classify(s) {
   const t = s.tags || {};
   const name = (s.name || t.name || '');
+
+  // 怪異
   if (t.historic === 'tomb' || t.landuse === 'cemetery' || t.amenity === 'grave_yard') return 'horror';
   if (t.man_made === 'mine_shaft' || t.man_made === 'adit') return 'horror';
   if (t.natural === 'cave_entrance') return 'horror';
-  if (t.abandoned || t.ruins || t.disused || t.historic === 'ruins') return 'horror';
-  if (t.railway === 'abandoned') return 'horror';
   if (/血|鬼|呪|死|首|怨|霊|怪|妖|幽|地獄|供養|無縁|塚|骨|魔|処刑|刑場|怪談/.test(name)) return 'horror';
 
+  // 違和感（disused/abandoned/wasの「機能を失ったもの」を強化）
+  if (t['disused:amenity'] === 'school' || t['abandoned:amenity'] === 'school') return 'normal';
+  if (t['disused:railway'] === 'station' || t['abandoned:railway'] === 'station') return 'normal';
+  if (t['disused:industrial'] || t['abandoned:industrial']) return 'normal';
+  if (Object.keys(t).some(k => k.startsWith('disused:') || k.startsWith('abandoned:') || k.startsWith('was:'))) return 'normal';
+  if (t.abandoned || t.ruins || t.disused || t.historic === 'ruins') return 'normal';
+  if (t.railway === 'abandoned' || t.railway === 'disused') return 'normal';
+
+  // 詩情
   if (t.waterway === 'waterfall' || t.natural === 'spring') return 'emotion';
   if (t.natural === 'tree') return 'emotion';
   if (t.tourism === 'viewpoint') return 'emotion';
@@ -714,18 +762,37 @@ function classify(s) {
   if (t.historic === 'wayside_shrine' || t.historic === 'wayside_cross') return 'emotion';
   if (t.amenity === 'place_of_worship') return 'emotion';
   if (t.natural === 'rock' || t.natural === 'stone') return 'emotion';
-  if (/民話|伝説|文学|名木|巨木|奇岩|滝|湧水|城跡|庵|碑/.test(name)) return 'emotion';
+  // 新規追加：ベンチ・小さな橋・銭湯・カフェ・駄菓子・古書・職人・並木・池・季節
+  if (t.amenity === 'bench') return 'emotion';
+  if (t.man_made === 'bridge' || (t.bridge === 'yes' && t.highway === 'footway')) return 'emotion';
+  if (t.amenity === 'public_bath') return 'emotion';
+  if (t.amenity === 'cafe' && !t.brand) return 'emotion';
+  if (t.shop === 'confectionery' || t.shop === 'bakery') return 'emotion';
+  if (t.shop === 'books' && !t.brand) return 'emotion';
+  if (t.craft) return 'emotion';
+  if (t.natural === 'tree_row') return 'emotion';
+  if (t.natural === 'water' && t.water === 'pond' && t.name) return 'emotion';
+  if (/桜|紅葉|蛍|梅|椿|藤|花見|名所/.test(name)) return 'emotion';
+  if (/民話|伝説|文学|名木|巨木|奇岩|滝|湧水|城跡|庵|碑|並木/.test(name)) return 'emotion';
 
   return 'normal';
 }
 
 function getStory(s) {
   const t = s.tags || {};
+  const name = (s.name || t.name || '');
+  // 季節キーワード優先
+  if (/桜|紅葉|蛍|梅|椿|藤|花見/.test(name)) return STORIES.kisetsu;
+
   if (t.tunnel === 'culvert' || t.waterway === 'canal' || t.waterway === 'stream') return STORIES.ankyo;
-  if (t.railway === 'abandoned') return STORIES.haisen;
+  if (t.railway === 'abandoned' || t.railway === 'disused' ||
+      t['disused:railway'] === 'station' || t['abandoned:railway'] === 'station') return STORIES.haieki;
+  if (t['disused:amenity'] === 'school' || t['abandoned:amenity'] === 'school') return STORIES.haikou;
+  if (t['disused:industrial'] || t['abandoned:industrial']) return STORIES.haikojo;
   if (t.barrier === 'block' || t.barrier === 'wall' || t.highway === 'dead_end') return STORIES.tomason;
   if (t.historic === 'boundary_stone' || t.historic === 'milestone') return STORIES.kekkai;
   if (t.natural === 'tree') return STORIES.tree;
+  if (t.natural === 'tree_row') return STORIES.namiki;
   if (t.waterway === 'waterfall') return STORIES.waterfall;
   if (t.natural === 'spring') return STORIES.spring;
   if (t.natural === 'cave_entrance') return STORIES.cave;
@@ -739,6 +806,14 @@ function getStory(s) {
   if (t.man_made === 'mine_shaft' || t.man_made === 'adit') return STORIES.mine;
   if (t.natural === 'rock' || t.natural === 'stone') return STORIES.rock;
   if (t.historic === 'well') return STORIES.ido;
+  if (t.amenity === 'bench') return STORIES.bench;
+  if (t.man_made === 'bridge' || t.bridge === 'yes') return STORIES.bridge;
+  if (t.amenity === 'public_bath') return STORIES.sento;
+  if (t.amenity === 'cafe') return STORIES.cafe;
+  if (t.shop === 'confectionery' || t.shop === 'bakery') return STORIES.dagashi;
+  if (t.shop === 'books') return STORIES.kosho;
+  if (t.craft) return STORIES.shokunin;
+  if (t.natural === 'water') return STORIES.ike;
   if (t.abandoned || t.disused || t.ruins) return STORIES.haikyo;
   if (t.place === 'locality' || t.place === 'hamlet' || t.place === 'isolated_dwelling') return STORIES.furuchimei;
   return STORIES.default;
@@ -749,24 +824,31 @@ async function fetchOSM(lat, lon, r) {
   const q = `[out:json][timeout:30];
 (
   nw["historic"](around:${r},${lat},${lon});
-  nw["amenity"~"place_of_worship|grave_yard"](around:${r},${lat},${lon});
-  nw["natural"~"rock|stone|cave_entrance|spring|cliff|ridge|arch"](around:${r},${lat},${lon});
+  nw["amenity"~"place_of_worship|grave_yard|public_bath|bench|cafe"](around:${r},${lat},${lon});
+  nw["natural"~"rock|stone|cave_entrance|spring|cliff|ridge|arch|tree_row|water"](around:${r},${lat},${lon});
   nw["natural"="tree"]["name"](around:${r},${lat},${lon});
   nw["natural"="tree"]["heritage"](around:${r},${lat},${lon});
   nw["natural"="tree"]["denotation"](around:${r},${lat},${lon});
   nw["natural"="tree"]["circumference"](around:${r},${lat},${lon});
   nw["waterway"~"waterfall|canal|stream"](around:${r},${lat},${lon});
   nw["tunnel"="culvert"](around:${r},${lat},${lon});
-  nw["railway"="abandoned"](around:${r},${lat},${lon});
+  nw["railway"~"abandoned|disused"](around:${r},${lat},${lon});
   nw["abandoned"](around:${r},${lat},${lon});
   nw["disused"](around:${r},${lat},${lon});
   nw["ruins"](around:${r},${lat},${lon});
-  nw["man_made"~"mine_shaft|adit"](around:${r},${lat},${lon});
+  nw["disused:amenity"](around:${r},${lat},${lon});
+  nw["abandoned:amenity"](around:${r},${lat},${lon});
+  nw["disused:railway"](around:${r},${lat},${lon});
+  nw["abandoned:railway"](around:${r},${lat},${lon});
+  nw["man_made"~"mine_shaft|adit|bridge"](around:${r},${lat},${lon});
   nw["barrier"~"block|wall"](around:${r},${lat},${lon});
   nw["highway"="dead_end"](around:${r},${lat},${lon});
   nw["tourism"="viewpoint"](around:${r},${lat},${lon});
   nw["landuse"="cemetery"](around:${r},${lat},${lon});
   nw["place"~"locality|hamlet|isolated_dwelling"](around:${r},${lat},${lon});
+  nw["shop"~"confectionery|bakery|books"](around:${r},${lat},${lon});
+  nw["craft"](around:${r},${lat},${lon});
+  nw["bridge"="yes"]["highway"="footway"](around:${r},${lat},${lon});
 );
 out center;`;
 
@@ -794,6 +876,9 @@ function isExcluded(s) {
        'school','university','college','kindergarten','library',
        'hospital','clinic','dentist','pharmacy','doctors',
        'bank','atm','parking','fuel','charging_station'].includes(t.amenity)) return true;
+  // チェーン店除外（個人経営のみ詩情扱いにしたい）
+  if (t.brand) return true;
+  if (/スタバ|スターバックス|ドトール|タリーズ|コメダ|サンマルク|ベローチェ|エクセルシオール|モスバーガー|マクドナルド|ローソン|セブン|ファミリーマート|ミニストップ/.test(t.name || '')) return true;
   return false;
 }
 
