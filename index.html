@@ -81,17 +81,32 @@ body::before{
   border:1.5px solid var(--ink); background:transparent;
   font-family:inherit; font-size:16px; font-weight:600;
   color:var(--ink); letter-spacing:0.15em; cursor:pointer;
-  border-radius:2px; -webkit-appearance:none;
+  -webkit-appearance:none;
+  transition:all 0.3s;
 }
+/* 移動手段モード */
+#scr-title .mode-row:nth-of-type(1) .mode-btn:nth-child(1){ border-radius: 40% 60% 50% 30% / 35% 55% 40% 60%; }
+#scr-title .mode-row:nth-of-type(1) .mode-btn:nth-child(2){ border-radius: 55% 45% 35% 65% / 50% 60% 30% 50%; }
+#scr-title .mode-row:nth-of-type(1) .mode-btn:nth-child(3){ border-radius: 45% 50% 60% 40% / 40% 35% 55% 50%; }
+/* カテゴリモード */
+#scr-title .mode-row:nth-of-type(2) .mode-btn:nth-child(1){ border-radius: 50% 40% 60% 50% / 45% 55% 35% 50%; }
+#scr-title .mode-row:nth-of-type(2) .mode-btn:nth-child(2){ border-radius: 40% 55% 45% 60% / 55% 40% 60% 35%; }
+#scr-title .mode-row:nth-of-type(2) .mode-btn:nth-child(3){ border-radius: 60% 45% 50% 40% / 35% 50% 45% 60%; }
 .mode-btn.active{ background:var(--ink); color:var(--paper); }
+
 .start{
   width:100%; margin-top:32px; padding:22px 0;
   background:var(--vermilion); color:#fff; border:none;
   font-family:inherit; font-weight:700; font-size:18px;
-  letter-spacing:0.5em; cursor:pointer; position:relative; border-radius:2px;
+  letter-spacing:0.5em; cursor:pointer; position:relative;
+  border-radius: 55% 45% 50% 50% / 45% 50% 50% 55%;
   -webkit-appearance:none;
 }
-.start::after{ content:""; position:absolute; inset:4px; border:1px solid rgba(255,255,255,0.4); pointer-events:none; }
+.start::after{
+  content:""; position:absolute; inset:4px;
+  border:1px solid rgba(255,255,255,0.4); pointer-events:none;
+  border-radius: 55% 45% 50% 50% / 45% 50% 50% 55%;
+}
 .start:disabled { opacity:0.4; cursor:not-allowed; }
 
 /* ====== 画面2: 道のり ====== */
@@ -129,7 +144,8 @@ body::before{
 .nav-bottom{ display:flex; justify-content:flex-end; align-items:flex-end; gap:12px; pointer-events:auto; }
 .nav-pause{
   width:56px; height:56px; border:1.5px solid var(--ink);
-  background:var(--paper); border-radius:50%;
+  background:var(--paper);
+  border-radius: 45% 55% 50% 50% / 50% 45% 55% 50%;
   display:flex; align-items:center; justify-content:center;
   font-family:inherit; font-size:14px; font-weight:700; color:var(--ink);
   cursor:pointer; -webkit-appearance:none;
@@ -194,14 +210,18 @@ body::before{
 .arr-cta .camera{
   flex:1; padding:20px 0; background:var(--ink); color:var(--paper);
   font-family:inherit; font-weight:700; font-size:17px;
-  letter-spacing:0.35em; border:none; cursor:pointer; border-radius:2px;
+  letter-spacing:0.35em; border:none; cursor:pointer;
+  border-radius: 50% 45% 55% 50% / 45% 55% 50% 45%;
   -webkit-appearance:none;
 }
 .arr-cta .next, .arr-cta .bad{
   width:60px; background:var(--paper); color:var(--ink);
   border:1.5px solid var(--ink); font-family:inherit;
-  font-size:18px; cursor:pointer; border-radius:2px; -webkit-appearance:none;
+  font-size:18px; cursor:pointer;
+  -webkit-appearance:none;
 }
+.arr-cta .bad{ border-radius: 60% 40% 50% 50% / 40% 60% 50% 50%; }
+.arr-cta .next{ border-radius: 40% 60% 50% 55% / 55% 45% 50% 45%; }
 
 /* ====== 画面4: 撮影 ====== */
 #scr-cam { background:#2a2520; padding:60px 22px 26px; }
@@ -209,7 +229,8 @@ body::before{
 .cam-top .cat{ font-size:18px; font-weight:700; letter-spacing:0.2em; }
 .cam-top .close{
   background:transparent; border:1.5px solid #f4e3c4; color:#f4e3c4;
-  font-family:inherit; font-size:13px; padding:8px 14px; border-radius:2px;
+  font-family:inherit; font-size:13px; padding:8px 14px;
+  border-radius: 50% 45% 55% 50% / 45% 55% 50% 45%;
   letter-spacing:0.15em; cursor:pointer; -webkit-appearance:none;
 }
 .viewfinder{
@@ -238,13 +259,18 @@ body::before{
 .filter-strip{ display:flex; gap:12px; overflow-x:auto; margin-bottom:24px; padding-bottom:6px; }
 .filter-strip::-webkit-scrollbar { display:none; }
 .filter{
-  flex:0 0 64px; height:64px; border-radius:50%;
+  flex:0 0 64px; height:64px;
   border:2px solid rgba(244,227,196,0.35);
   display:flex; align-items:center; justify-content:center;
   font-family:inherit; font-size:14px; font-weight:700;
   color:#f4e3c4; letter-spacing:0.05em; cursor:pointer;
   -webkit-appearance:none;
 }
+.filter:nth-child(1){ border-radius: 50% 40% 55% 45% / 45% 55% 40% 50%; }
+.filter:nth-child(2){ border-radius: 45% 55% 50% 40% / 50% 45% 55% 40%; }
+.filter:nth-child(3){ border-radius: 55% 45% 40% 55% / 40% 50% 45% 55%; }
+.filter:nth-child(4){ border-radius: 40% 50% 55% 45% / 55% 40% 50% 45%; }
+.filter:nth-child(5){ border-radius: 50% 55% 45% 50% / 45% 50% 55% 45%; }
 .filter.active{ border-color:#ffb360; box-shadow:0 0 0 3px rgba(255,179,96,0.25); }
 .filter.f0{ background:#5a3f28; }
 .filter.f1{ background:#8a5a32; }
@@ -254,18 +280,21 @@ body::before{
 
 .shutter-bar{ display:flex; align-items:center; justify-content:space-between; padding:0 16px; }
 .shutter{
-  width:74px; height:74px; border-radius:50%;
+  width:74px; height:74px;
+  border-radius: 48% 52% 50% 50% / 50% 48% 52% 50%;
   background:#f4e3c4; border:4px solid #2a2520;
   box-shadow:0 0 0 2px #f4e3c4; cursor:pointer;
   -webkit-appearance:none;
 }
 .cam-side-btn{
-  min-width:80px; padding:14px 16px; border-radius:2px;
+  min-width:80px; padding:14px 16px;
   background:transparent; border:1.5px solid #f4e3c4;
   color:#f4e3c4; font-family:inherit; font-size:13px;
   font-weight:600; letter-spacing:0.15em; cursor:pointer;
   -webkit-appearance:none;
 }
+#cam-save{ border-radius: 45% 55% 50% 50% / 50% 45% 55% 50%; }
+#cam-redo{ border-radius: 55% 45% 50% 50% / 50% 55% 45% 50%; }
 #cam-file-input { display:none; }
 
 /* ====== 画面5: 記録 ====== */
@@ -306,12 +335,16 @@ body::before{
 .sum-share .main{
   flex:1; padding:20px 0; background:var(--ink); color:var(--paper);
   font-family:inherit; font-weight:700; font-size:16px; letter-spacing:0.4em;
-  border:none; cursor:pointer; border-radius:2px; -webkit-appearance:none;
+  border:none; cursor:pointer;
+  border-radius: 50% 45% 55% 50% / 45% 55% 50% 45%;
+  -webkit-appearance:none;
 }
 .sum-share .icon-btn{
   min-width:80px; border:1.5px solid var(--ink); background:transparent;
   font-family:inherit; font-size:14px; font-weight:700;
-  letter-spacing:0.15em; cursor:pointer; border-radius:2px; -webkit-appearance:none;
+  letter-spacing:0.15em; cursor:pointer;
+  border-radius: 55% 45% 50% 50% / 50% 55% 45% 50%;
+  -webkit-appearance:none;
 }
 
 /* マーカー */
