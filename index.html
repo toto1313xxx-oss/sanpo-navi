@@ -379,14 +379,14 @@ body::before{
     <button class="start" id="start-btn">出 発</button>
     <div class="error-msg" id="title-error"></div>
 
-    <button id="debug-toggle" style="
+    <button id="debug-toggle" onclick="toggleDebug()" style="
       width:100%;
       margin-top:20px;
       padding:10px 0;
       background:transparent;
-      border:1px dashed var(--ink-mid);
-      color:var(--ink-mid);
-      font-family:inherit;
+      border:1px dashed #6a6253;
+      color:#6a6253;
+      font-family:'Shippori Mincho',serif;
       font-size:12px;
       letter-spacing:0.2em;
       cursor:pointer;
@@ -536,6 +536,29 @@ body::before{
 </div>
 
 <script>
+// グローバルでデバッグトグル関数を定義
+function toggleDebug() {
+  const cur = localStorage.getItem('debugMode') === 'true';
+  const next = !cur;
+  localStorage.setItem('debugMode', next);
+  if (typeof debugMode !== 'undefined') debugMode = next;
+  const btn = document.getElementById('debug-toggle');
+  btn.textContent = `占術を覗き見る：${next ? 'ON' : 'OFF'}`;
+  btn.style.color = next ? '#8a3324' : '#6a6253';
+  btn.style.borderColor = next ? '#8a3324' : '#6a6253';
+}
+
+// 初期表示
+window.addEventListener('DOMContentLoaded', () => {
+  const cur = localStorage.getItem('debugMode') === 'true';
+  const btn = document.getElementById('debug-toggle');
+  if (btn) {
+    btn.textContent = `占術を覗き見る：${cur ? 'ON' : 'OFF'}`;
+    btn.style.color = cur ? '#8a3324' : '#6a6253';
+    btn.style.borderColor = cur ? '#8a3324' : '#6a6253';
+  }
+});
+
 // ========= 定数 =========
 const OSRM = 'https://router.project-osrm.org/route/v1';
 const OVERPASS_SERVERS = [
@@ -1138,10 +1161,16 @@ document.getElementById('start-btn').addEventListener('click', startJourney);
 
 // デバッグトグル
 const debugToggle = document.getElementById('debug-toggle');
-debugToggle.checked = debugMode;
-debugToggle.addEventListener('change', () => {
-  debugMode = debugToggle.checked;
+function updateDebugBtn() {
+  debugToggle.textContent = `占術を覗き見る：${debugMode ? 'ON' : 'OFF'}`;
+  debugToggle.style.color = debugMode ? 'var(--vermilion)' : 'var(--ink-mid)';
+  debugToggle.style.borderColor = debugMode ? 'var(--vermilion)' : 'var(--ink-mid)';
+}
+updateDebugBtn();
+debugToggle.addEventListener('click', () => {
+  debugMode = !debugMode;
   localStorage.setItem('debugMode', debugMode);
+  updateDebugBtn();
 });
 
 function showError(msg) {
