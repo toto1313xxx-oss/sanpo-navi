@@ -577,6 +577,9 @@ const STORIES = {
   ankyo: { name:'暗 渠', sub:'水脈系・失われた川',
     text:'アスファルトの下を、\nまだ水が流れている。\n\n道は{em}不自然に蛇行{/em}し、\nマンホールの蓋が、\n不規則に並んでいる。\n\nここは、かつて川だった。',
     facts:['水脈系','失われた川','時の層'] },
+  ogawa: { name:'小 川', sub:'生きた水脈',
+    text:'今も水が、\n地上を流れている。\n\n小さなせせらぎ、\nコンクリートの護岸、\n両岸の雑草。\n\nここは{em}まだ川{/em}である。\n暗渠にされる前の、\n素直な水の形。',
+    facts:['水脈','生きた水'] },
   haisen: { name:'廃 線 跡', sub:'鉄路の記憶',
     text:'かつて鉄の塊が、\nここを{em}往復していた{/em}。\n\n今は草に覆われ、\n家々の隙間に、\n痕跡だけが残る。',
     facts:['交通跡','時間の化石'] },
@@ -784,7 +787,8 @@ function getStory(s) {
   // 季節キーワード優先
   if (/桜|紅葉|蛍|梅|椿|藤|花見/.test(name)) return STORIES.kisetsu;
 
-  if (t.tunnel === 'culvert' || t.waterway === 'canal' || t.waterway === 'stream') return STORIES.ankyo;
+  if (t.tunnel === 'culvert') return STORIES.ankyo;
+  if (t.waterway === 'canal' || t.waterway === 'stream') return STORIES.ogawa;
   if (t.railway === 'abandoned' || t.railway === 'disused' ||
       t['disused:railway'] === 'station' || t['abandoned:railway'] === 'station') return STORIES.haieki;
   if (t['disused:amenity'] === 'school' || t['abandoned:amenity'] === 'school') return STORIES.haikou;
