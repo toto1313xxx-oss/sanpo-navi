@@ -378,6 +378,11 @@ body::before{
 
     <button class="start" id="start-btn">出 発</button>
     <div class="error-msg" id="title-error"></div>
+
+    <label style="display:flex;align-items:center;gap:8px;margin-top:20px;font-size:11px;color:var(--ink-mid);letter-spacing:0.15em;cursor:pointer;justify-content:center;">
+      <input type="checkbox" id="debug-toggle" style="width:14px;height:14px;accent-color:var(--vermilion);">
+      <span>占術を覗き見る（開発）</span>
+    </label>
   </div>
 </div>
 
@@ -401,6 +406,25 @@ body::before{
     </div>
   </div>
   <div class="nav-loading" id="nav-loading"><span class="spinner-ink"></span>占術同調中</div>
+
+  <div id="debug-panel" style="
+    display:none;
+    position:absolute;
+    bottom:120px;
+    left:22px; right:22px;
+    background:rgba(26,24,20,0.92);
+    color:var(--paper);
+    border:1px solid var(--vermilion);
+    padding:14px 16px;
+    z-index:15;
+    font-size:12px;
+    line-height:1.7;
+  ">
+    <div style="font-size:9px;color:var(--vermilion);letter-spacing:0.3em;margin-bottom:6px;">[ 占術ノ正体 ]</div>
+    <div id="debug-name" style="font-weight:700;font-size:15px;letter-spacing:0.05em;margin-bottom:4px;"></div>
+    <div id="debug-meta" style="font-size:11px;color:rgba(235,229,216,0.7);margin-bottom:8px;"></div>
+    <a id="debug-gmap" href="#" target="_blank" rel="noopener" style="color:#ffb360;text-decoration:none;font-size:11px;letter-spacing:0.1em;border-bottom:1px solid #ffb360;padding-bottom:1px;">[ 現世の座標を開く ↗ ]</a>
+  </div>
 </div>
 
 <!-- ====== 画面3: 到着 ====== -->
@@ -609,6 +633,7 @@ let routeLayer = null, selfMarker = null, destMarker = null, watchId = null;
 let arrived = false;
 let lastUserPos = null;
 let currentFilter = 'none';
+let debugMode = localStorage.getItem('debugMode') === 'true';
 
 // ========= 画面切替 =========
 function showScreen(id) {
@@ -851,6 +876,21 @@ async function drawNavigation() {
   }
   document.getElementById('nav-loading').classList.remove('show');
 
+  // デバッグパネル
+  const debugPanel = document.getElementById('debug-panel');
+  if (debugMode) {
+    const story = getStory(chosenSpot);
+    const t = chosenSpot.tags || {};
+    const realName = t.name || t['name:ja'] || '（名前なし）';
+    document.getElementById('debug-name').textContent = `${story.name}：${realName}`;
+    document.getElementById('debug-meta').textContent =
+      `${story.sub || ''} / ${chosenSpot.dist}m / ${classify(chosenSpot).toUpperCase()}`;
+    document.getElementById('debug-gmap').href = `https://maps.google.com/?q=${spotLat},${spotLon}`;
+    debugPanel.style.display = 'block';
+  } else {
+    debugPanel.style.display = 'none';
+  }
+
   updateDistance(userLat, userLon);
 
   // 追跡開始
@@ -1085,6 +1125,14 @@ document.querySelectorAll('.mode-btn[data-cat]').forEach(b => {
 });
 
 document.getElementById('start-btn').addEventListener('click', startJourney);
+
+// デバッグトグル
+const debugToggle = document.getElementById('debug-toggle');
+debugToggle.checked = debugMode;
+debugToggle.addEventListener('change', () => {
+  debugMode = debugToggle.checked;
+  localStorage.setItem('debugMode', debugMode);
+});
 
 function showError(msg) {
   const e = document.getElementById('title-error');
