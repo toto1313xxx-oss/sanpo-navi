@@ -433,7 +433,20 @@ body::before{
     <div style="font-size:9px;color:var(--vermilion);letter-spacing:0.3em;margin-bottom:6px;">[ 占術ノ正体 ]</div>
     <div id="debug-name" style="font-weight:700;font-size:15px;letter-spacing:0.05em;margin-bottom:4px;"></div>
     <div id="debug-meta" style="font-size:11px;color:rgba(235,229,216,0.7);margin-bottom:8px;"></div>
-    <a id="debug-gmap" href="#" target="_blank" rel="noopener" style="color:#ffb360;text-decoration:none;font-size:11px;letter-spacing:0.1em;border-bottom:1px solid #ffb360;padding-bottom:1px;">[ 現世の座標を開く ↗ ]</a>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <a id="debug-gmap" href="#" target="_blank" rel="noopener" style="color:#ffb360;text-decoration:none;font-size:11px;letter-spacing:0.1em;border-bottom:1px solid #ffb360;padding-bottom:1px;">[ 現世の座標 ↗ ]</a>
+      <button id="debug-arrive" onclick="forceArrive()" style="
+        background:rgba(255,179,96,0.15);
+        border:1px solid #ffb360;
+        color:#ffb360;
+        font-family:'Shippori Mincho',serif;
+        font-size:11px;
+        padding:4px 10px;
+        letter-spacing:0.1em;
+        cursor:pointer;
+        -webkit-appearance:none;
+      ">[ 強制到着 ]</button>
+    </div>
   </div>
 </div>
 
@@ -546,6 +559,14 @@ function toggleDebug() {
   btn.textContent = `占術を覗き見る：${next ? 'ON' : 'OFF'}`;
   btn.style.color = next ? '#8a3324' : '#6a6253';
   btn.style.borderColor = next ? '#8a3324' : '#6a6253';
+}
+
+// 強制到着（デバッグ）
+function forceArrive() {
+  if (typeof arrive === 'function' && typeof chosenSpot !== 'undefined' && chosenSpot) {
+    if (typeof arrived !== 'undefined') arrived = true;
+    arrive();
+  }
 }
 
 // 初期表示
