@@ -90,8 +90,8 @@ html, body { height: 100%; overflow: hidden; background: #050307; color: #e8d9b8
   <button class="mode-btn" data-mode="bike" title="自転車">🚴</button>
   <button class="mode-btn" data-mode="car" title="車">🚗</button>
   <div style="width:1px; background:rgba(212,175,106,0.2); margin:6px 2px;"></div>
-  <button class="mode-btn" id="emotion-btn" title="詩情">✨</button>
-  <button class="mode-btn" id="horror-btn" title="怪異">👻</button>
+  <button class="mode-btn" id="emotion-btn" title="詩情（エモ・風景・トマソン）">✨</button>
+  <button class="mode-btn" id="horror-btn" title="怪異（伝承・結界・不穏）">👻</button>
 </div>
 
 <div id="dist-badge">
@@ -125,36 +125,28 @@ html, body { height: 100%; overflow: hidden; background: #050307; color: #e8d9b8
 <script>
 const OSRM = 'https://router.project-osrm.org/route/v1';
 const OVERPASS_SERVERS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+const NICHIBUNKEN_SPARQL = 'https://enamdict.nichibun.ac.jp/sparql'; // 日文研 怪異・妖怪エンドポイント
 
 const DIST_CONFIG = {
-  foot: { min: 200, max: 1500 },     // 徒歩：身近な路地裏
-  bike: { min: 1500, max: 5000 },    // 自転車：少し遠くの隣町
-  car: { min: 5000, max: 15000 }     // 車：完全に非日常の領域
+  foot: { min: 200, max: 1500 },
+  bike: { min: 1500, max: 5000 },
+  car: { min: 5000, max: 15000 }
 };
 
 const OSRM_PROFILE = { foot: 'foot', bike: 'bike', car: 'driving' };
 
-const HORROR_KEYWORDS = /血|鬼|呪|死|首|怨|霊|怪|妖|幽|地獄|供養|処刑|刑場|無縁|殉難|墓|塚|事故|心霊|骨|闇|魔|隠|仏|寺/;
-const EMOTION_KEYWORDS = /民話|伝説|文学|物語|信仰|聖地|遺跡|名木|巨木|奇岩|滝|湧水|名水|古道|旧道|城跡|跡|庵|碑|灯籠|橋|辨財天|弁天/;
+const HORROR_KEYWORDS = /血|鬼|呪|死|首|怨|霊|怪|妖|幽|地獄|供養|無縁|殉難|塚|骨|闇|魔|隠|仏/;
+const EMOTION_KEYWORDS = /民話|伝説|文学|物語|名木|巨木|奇岩|滝|湧水|名水|古道|旧道|城跡|跡|庵|碑|灯籠|橋/;
 
-// モードごとの語り（お地蔵さん、巨木、レトロな違和感の情景を反映）
+// 文脈に応じた叙情的な語り
 const STORIES = {
-  horror: [
-     "コンクリートの隙間を歪めて育った、都市を侵食するような巨木の境界。その根の下には、かつて現世の地図から消された恐ろしい記録が眠っているという。",
-     "不自然にビシッと並ぶお地蔵さんの列。カメラのファインダー越しに数えると、なぜか記録よりも1体多く写り込み、その1体だけが妙にリアルな笑みを浮かべている。",
-     "錆びついたレトロなパンダの遊具が佇む、夕暮れの寂れた公園。風もないのに、誰も乗せていないバネが「キィ…キィ…」と不穏な音を立てて微かに揺れ続けている。",
-     "かつて大きな戦や無縁仏の果てに築かれた土壌。興味本位で足を踏み入れた者は、その日の帰り道で必ず『自分の後ろを歩く、数が増えていく足音』を聴くことになる。"
-  ],
-  emotion: [
-     "住宅街の片隅にポツンと残された、空中へ繋がる存在しない2階への扉（トマソン階段）。かつてそこにあった日常の記憶を、剥き出しの鉄骨だけが今もひっそりと守っている。",
-     "数百年もの間、旅人たちを見守り、あるいはその涙を吸い込んできた静謐なる名木。都会の喧騒のすぐ裏で、ここだけが時の流れから完全に置き去りにされている。",
-     "昭和の面影を残したまま時間が止まった、ロードサイドの寂れた自販機コーナーの残滓。蛍光灯がチカチカと明滅し、ここだけ空気の密度が違っているかのような錯覚を覚える。",
-     "夜露に濡れた苔の下に、歴史の教科書には決して載らない市井の民のささやかな祈りが眠る場所。目を閉じると、遥か昔の誰かの呟きが、胸の奥に静かに響き渡る。"
-  ],
-  default: [
-     "現世の合理的な都市開発から奇跡的にこぼれ落ちた、時間線の空白地帯。かつてここに何があったのか、それを知る術は失われているが、土地の記憶だけが確かに息づいている。",
-     "都市の血管の隙間に潜む、静かなる違和感。訪れる者の心の歪みに応じて、この場所は優しくも、時に冷酷な顔を見せるという。辿り着いた事自体が、一つの奇縁である。"
-  ]
+  nichibunken: "【日文研 古伝承】此処は文献に記録された本物の怪異地。かつて現世の住人が遭遇し、畏れ震えたモノの記憶が、今も大地の底から陽炎のように立ち上っている。",
+  ankyo: "【都市の盲腸 - 暗渠】かつて陽の光を浴びて流れていた川が、コンクリートの底に幽閉された場所。耳を澄ますと、足元から現世のノイズを拒絶する水の囁きが聞こえる。",
+  tomason: "【超芸術 - トマソン】上る先のない階段、開かない高所の扉。都市の開発エラーが産み落とした、無目的かつ純粋な建築のバグが、静かに通行人を見下ろしている。",
+  kekkai: "【路傍の結界】不自然に配置された石、あるいは奇妙な行き止まり。それ以上先へ進むことを何かが拒んでいる、あるいは『何か』を外に出さないための境界線。",
+  view: "【現世を見下ろす高台】世界が一望できる、吹き抜けの境界。ここから見下ろす街並みはどこかミニチュアのようで、自分が現世から少し浮き上がったような錯覚に囚われる。",
+  bench: "【水辺の空白】川のせせらぎや波の音だけが支配する、ポツンと残されたベンチ。誰を待つでもなく、ただ時間を忘れて世界の境界線に浸るための特等席。",
+  default: "現世の合理的な都市開発から奇跡的にこぼれ落ちた、時間線の空白地帯。かつてここに何があったのか、それを知る術は失われているが、土地の記憶だけが確かに息づいている。"
 };
 
 let mode = 'foot', emotion = false, horror = false;
@@ -184,38 +176,54 @@ function haversine(lat1, lon1, lat2, lon2) {
   return Math.round(R*2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 }
 
+// 取得した地点の属性からリッチなコンテキストを動的判定
 function getDetails(s) {
-  const t = s.tags || {};
-  const name = s.name || t.name || t['name:ja'] || '名無き違和感';
-  
-  let icon = '📍';
-  let cat = '隠れた古跡';
-  let modeKey = 'default';
-
-  if (HORROR_KEYWORDS.test(name) || t.historic === 'tomb' || t.amenity === 'grave_yard') {
-    icon = '👻'; cat = '怪異伝承の地'; modeKey = 'horror';
-  } else if (t.historic === 'wayside_shrine' || t.historic === 'wayside_cross') {
-    icon = '🪦'; cat = '路傍のお地蔵さん・祠'; modeKey = horror ? 'horror' : 'default';
-  } else if (t.historic === 'castle' || t.historic === 'fortress') {
-    icon = '🏯'; cat = '古城・砦の残滓'; modeKey = 'emotion';
-  } else if (t.natural === 'tree' || t.natural === 'stone') {
-    icon = '🌳'; cat = '老木・巨木の境界'; modeKey = 'emotion';
-  } else if (t.waterway === 'waterfall' || t.natural === 'spring') {
-    icon = '🏞️'; cat = '秘められた名瀑・湧水'; modeKey = 'emotion';
-  } else if (t.amenity === 'place_of_worship') {
-    icon = '⛩️'; cat = '由緒ある社寺の影'; modeKey = emotion ? 'emotion' : 'default';
+  if (s.source === 'nichibunken') {
+    return {
+      name: s.name || '伝承の怪異地',
+      icon: '👻',
+      cat: '日文研・妖怪伝承の地',
+      desc: `${STORIES.nichibunken}\n\n《記録》${s.desc || '詳細は闇の中。'}`
+    };
   }
 
-  // 強制モード適用時の微調整
-  if (horror) { icon = '👻'; cat = '境界線上の怪異'; modeKey = 'horror'; }
-  else if (emotion) { icon = '✨'; cat = '時の止まった静寂'; modeKey = 'emotion'; }
+  const t = s.tags || {};
+  let name = s.name || t.name || t['name:ja'] || '名無き境界';
+  let icon = '📍';
+  let cat = '隠れた空白地帯';
+  let desc = STORIES.default;
 
-  const hash = s.id ? s.id.split('-')[1] || 0 : 0;
-  const arr = STORIES[modeKey] || STORIES['default'];
-  const baseDesc = arr[parseInt(hash) % arr.length];
-  
-  const subInfo = t.description ? `\n\n（現世の記録: ${t.description}）` : '';
-  return { name, icon, cat, desc: baseDesc + subInfo };
+  // 暗渠・地下水路の判定
+  if (t.tunnel === 'culvert' || t.waterway === 'canal' || t.waterway === 'stream') {
+    name = t.name ? `${t.name}（暗渠領域）` : '微かな水の這う暗渠';
+    icon = '🌊'; cat = '都市の盲腸 - 暗渠跡'; desc = STORIES.ankyo;
+  }
+  // 高台・崖・見晴らしの判定
+  else if (t.natural === 'cliff' || t.natural === 'ridge' || t.tourism === 'viewpoint') {
+    name = t.name || '見晴らしの良い高台';
+    icon = '🔭'; cat = '現世を見下ろす高台'; desc = STORIES.view;
+  }
+  // 川沿い・水辺のベンチ判定
+  else if (t.amenity === 'bench' || t.leisure === 'park') {
+    name = t.name || '世界の果てのベンチ';
+    icon = '🪑'; cat = '水辺の穴場・公園'; desc = STORIES.bench;
+  }
+  // トマソン・不自然な障壁・行き止まり判定
+  else if (t.barrier === 'block' || t.barrier === 'wall' || t.highway === 'dead_end') {
+    name = '超芸術トマソン的隙間';
+    icon = '🚪'; cat = '純粋建築のバグ'; desc = STORIES.tomason;
+  }
+  // お地蔵さん・祠・結界判定
+  else if (t.historic === 'wayside_shrine' || t.historic === 'wayside_cross') {
+    name = t.name || '路傍のお地蔵さん';
+    icon = '🪦'; cat = '路傍の結界・祠'; desc = STORIES.kekkai;
+  }
+  // 一般的な社寺や自然物
+  else if (t.amenity === 'place_of_worship') { icon = '⛩️'; cat = '由緒ある社寺の影'; }
+  else if (t.natural === 'tree') { icon = '🌳'; cat = '老木・巨木の境界'; }
+
+  const subInfo = t.description ? `\n\n（現世のタグ: ${t.description}）` : '';
+  return { name, icon, cat, desc: desc + subInfo };
 }
 
 function showError(msg) { const e = document.getElementById('error-msg'); e.textContent = msg; e.style.display = 'block'; }
@@ -255,22 +263,58 @@ function updateLocation(lat, lon) {
   checkArrival(lat, lon);
 }
 
-// ★【大改修】点(node)と面(way)を両方網羅する爆速Overpassクエリ
-async function fetchSpots(lat, lon) {
-  const cfg = DIST_CONFIG[mode];
-  const maxRadius = cfg.max;
+// 🟢 1. [API発射] 日文研の怪異・妖怪伝承データをSPARQL経由で取得
+async function fetchNichibunken(lat, lon, radiusKm) {
+  // ユーザー周辺の緯度経度矩形を簡易計算
+  const dLat = radiusKm / 111;
+  const dLon = radiusKm / (111 * Math.cos(lat * Math.PI / 180));
+  
+  const minLat = lat - dLat, maxLat = lat + dLat;
+  const minLon = lon - dLon, maxLon = lon + dLon;
 
-  // 面データ(way)も取りこぼさないよう nw を採用。車でもフィルター制限をかけずに全拾いする
-  const filterString = `
-    nw["historic"](around:${maxRadius},${lat},${lon});
-    nw["amenity"~"place_of_worship|grave_yard"](around:${maxRadius},${lat},${lon});
-    nw["natural"~"rock|stone|cave_entrance|spring|tree"](around:${maxRadius},${lat},${lon});
-    nw["waterway"="waterfall"](around:${maxRadius},${lat},${lon});
-    nw["railway"~"abandoned|disused"](around:${maxRadius},${lat},${lon});
+  const query = `
+    PREFIX schema: <http://schema.org/>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    SELECT ?label ?lat ?long ?desc WHERE {
+      ?s rdfs:label ?label ;
+         schema:geo [ schema:latitude ?lat ; schema:longitude ?long ] .
+      OPTIONAL { ?s schema:description ?desc . }
+      FILTER(?lat >= ${minLat} && ?lat <= ${maxLat} && ?long >= ${minLon} && ?long <= ${maxLon})
+    } LIMIT 30
   `;
 
-  // [out:center]を付与することで、面データでも中心の緯度経度を自動算出してくれる
-  const opaq = `[out:json][timeout:30];(${filterString});out center;`;
+  try {
+    const res = await fetch(`${NICHIBUNKEN_SPARQL}?query=${encodeURIComponent(query)}&output=json`, { timeout: 6000 });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return (json.results?.bindings || []).map((b, i) => ({
+      lat: parseFloat(b.lat.value),
+      lon: parseFloat(b.long.value),
+      name: b.label.value,
+      desc: b.desc ? b.desc.value : '古文書に記されし怪異の跡地。',
+      source: 'nichibunken',
+      id: 'nbk-' + i + '-' + b.label.value
+    }));
+  } catch (e) {
+    console.warn("日文研API通信エラー (タイムアウトまたは混雑):", e);
+    return []; // 落ちてもアプリは死なさず、OSM側で救済する
+  }
+}
+
+// 🟢 2. [API発射] OSM（Overpass）の超強化クエリ（高台・暗渠・ベンチ・トマソン追加）
+async function fetchOSM(lat, lon, radiusM) {
+  const filterString = `
+    nw["historic"](around:${radiusM},${lat},${lon});
+    nw["amenity"~"place_of_worship|grave_yard|bench"](around:${radiusM},${lat},${lon});
+    nw["natural"~"rock|stone|cave_entrance|spring|tree|cliff|ridge"](around:${radiusM},${lat},${lon});
+    nw["waterway"~"waterfall|canal|stream"](around:${radiusM},${lat},${lon});
+    nw["tunnel"="culvert"](around:${radiusM},${lat},${lon});
+    nw["barrier"~"block|wall"](around:${radiusM},${lat},${lon});
+    nw["highway"="dead_end"](around:${radiusM},${lat},${lon});
+    nw["tourism"="viewpoint"](around:${radiusM},${lat},${lon});
+    nw["leisure"="park"](around:${radiusM},${lat},${lon});
+  `;
+  const opaq = `[out:json][timeout:25];(${filterString});out center;`;
 
   for (const server of OVERPASS_SERVERS) {
     try {
@@ -281,6 +325,7 @@ async function fetchSpots(lat, lon) {
         lat: e.lat || e.center?.lat, 
         lon: e.lon || e.center?.lon,
         tags: e.tags || {}, 
+        source: 'osm',
         id: e.type + '-' + e.id
       })).filter(e => e.lat && e.lon);
     } catch (err) {}
@@ -288,9 +333,10 @@ async function fetchSpots(lat, lon) {
   return [];
 }
 
+// ⚡ 2つのAPIを「同時に叩いて」「ガッチャンコ」する主幹ロジック
 async function startJourney() {
   hideError();
-  setBtnState(true, '霊脈を特定中...');
+  setBtnState(true, '霊脈と古伝承を同期中...');
   
   try {
     const pos = await new Promise((res, rej) => {
@@ -299,43 +345,53 @@ async function startJourney() {
     updateLocation(pos.coords.latitude, pos.coords.longitude);
     map.setView([userLat, userLon], 15);
     
-    let list = await fetchSpots(userLat, userLon);
-    
-    // 直線距離の計算と、移動手段に応じた「ドーナツ範囲（最小〜最大）」での厳密フィルタ
     const cfg = DIST_CONFIG[mode];
+    const radiusKm = cfg.max / 1000;
+
+    // ★ 同時（並列）にAPIリクエストを投げて、両方待つ
+    const [nichibunkenList, osmList] = await Promise.all([
+      fetchNichibunken(userLat, userLon, radiusKm),
+      fetchOSM(userLat, userLon, cfg.max)
+    ]);
+
+    // リストを1つの巨大な「現世の境界リスト」に結合
+    let list = [...nichibunkenList, ...osmList];
+    
+    // 距離計算と範囲フィルタ
     list.forEach(s => s.dist = haversine(userLat, userLon, s.lat, s.lon));
     list = list.filter(s => s.dist >= cfg.min && s.dist <= cfg.max);
-
-    // 除外リスト、既読リストの適用
     list = list.filter(s => !badReports.includes(s.id) && !recentPicks.includes(s.id));
-    
-    // ★【大改修】ゼロ件全滅を防ぐためのマイルドな世界観フィルター
+
+    // マイルドな世界観フィルタ
     if (horror) {
       list = list.filter(s => {
-        const name = s.tags.name || '';
+        if (s.source === 'nichibunken') return true; // 日文研データは怪異100%なので無条件パス
+        const name = s.tags?.name || '';
         return HORROR_KEYWORDS.test(name) || 
-               s.tags.amenity === 'grave_yard' || 
-               s.tags.historic === 'tomb' ||
-               s.tags.historic === 'wayside_shrine' || 
-               Math.random() > 0.6; // テキストに不穏ワードがなくても、怪異の舞台として救済抽出
+               s.tags?.amenity === 'grave_yard' || 
+               s.tags?.barrier !== undefined || // 結界要素
+               s.tags?.highway === 'dead_end' ||
+               Math.random() > 0.5;
       });
     } else if (emotion) {
       list = list.filter(s => {
-        const name = s.tags.name || '';
+        if (s.source === 'nichibunken') return false; // 詩情モードではおどろおどろしいものは弾く
+        const name = s.tags?.name || '';
         return EMOTION_KEYWORDS.test(name) || 
-               s.tags.historic !== undefined || 
-               s.tags.natural === 'tree' ||
-               Math.random() > 0.4; // 詩情あふれる空白地帯として救済抽出
+               s.tags?.tunnel === 'culvert' || // 暗渠
+               s.tags?.amenity === 'bench' || // ベンチ
+               s.tags?.tourism === 'viewpoint' || // 高台
+               Math.random() > 0.3;
       });
     }
 
     if (!list.length) { 
-      showError(`この領域（${mode === 'foot' ? '徒歩圏内' : mode === 'bike' ? '自転車圏内' : '車圏内'}）に条件に合う幽路がありません。モードを変えるか少し移動してください。`); 
+      showError(`指定の領域に幽路が交わりません。モードを切り替えるか、少し移動して再試行してください。`); 
       setBtnState(false, 'どこか連れてって'); 
       return; 
     }
 
-    // 遠すぎるものが選ばれにくいよう距離ソートし、上位数件からランダム抽選
+    // 距離が近めのものを程よく選定
     list.sort((a,b) => a.dist - b.dist);
     chosenSpot = list[Math.floor(Math.random() * Math.min(list.length, 6))];
     
@@ -355,7 +411,7 @@ async function startJourney() {
 
     const det = getDetails(chosenSpot);
     document.getElementById('debug-name').textContent = det.name;
-    document.getElementById('debug-meta').textContent = `${det.cat} / 直線距離 ${chosenSpot.dist}m (${mode === 'foot' ? '徒歩' : mode === 'bike' ? '自転車' : '車'})`;
+    document.getElementById('debug-meta').textContent = `${det.cat} / 直線 ${chosenSpot.dist}m (${mode === 'foot' ? '徒歩' : mode === 'bike' ? '自転車' : '車'})`;
     document.getElementById('debug-gmap').href = `https://maps.google.com/?q=${spotLat},${spotLon}`;
     document.getElementById('debug-panel').style.display = 'block';
 
@@ -368,7 +424,7 @@ async function startJourney() {
     }, null, { enableHighAccuracy: true });
 
   } catch (err) {
-    showError('位置情報または霊脈の特定に失敗しました。位置情報の利用を許可してください。');
+    showError('位置情報または霊脈の特定に失敗しました。');
     setBtnState(false, 'どこか連れてって');
   }
 }
