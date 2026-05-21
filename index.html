@@ -36,7 +36,7 @@ body{
 }
 body::before{
   content:""; position:fixed; inset:0; pointer-events:none; z-index:50;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.1  0 0 0 0 0.09  0 0 0 0 0.07  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.1  0 0 0 0 0.09  0 0 0 0 0.07  0 0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   opacity:0.08; mix-blend-mode:multiply;
 }
 
@@ -593,29 +593,40 @@ body::before{
 <div class="toast" id="toast"></div>
 
 <script>
+// グローバルスコープの競合回避用のフラグ保持オブジェクト
+const AppState = {
+  debugMode: localStorage.getItem('debugMode') === 'true',
+  arrived: false
+};
+
 // グローバルでデバッグトグル関数を定義
 function toggleDebug() {
-  const cur = localStorage.getItem('debugMode') === 'true';
-  const next = !cur;
+  const next = !AppState.debugMode;
   localStorage.setItem('debugMode', next);
-  if (typeof debugMode !== 'undefined') debugMode = next;
+  AppState.debugMode = next;
   const btn = document.getElementById('debug-toggle');
   btn.textContent = `占術を覗き見る：${next ? 'ON' : 'OFF'}`;
   btn.style.color = next ? '#8a3324' : '#6a6253';
   btn.style.borderColor = next ? '#8a3324' : '#6a6253';
+  
+  const panel = document.getElementById('debug-panel');
+  if (panel && chosenSpot) {
+    panel.style.display = next ? 'block' : 'none';
+  }
 }
 
 // 強制到着（デバッグ）
 function forceArrive() {
-  if (typeof arrive === 'function' && typeof chosenSpot !== 'undefined' && chosenSpot) {
-    if (typeof arrived !== 'undefined') arrived = true;
-    arrive();
+  if (typeof triggerArrival === 'function' && chosenSpot) {
+    AppState.arrived = true;
+    triggerArrival();
   }
 }
 
 // 初期表示
 window.addEventListener('DOMContentLoaded', () => {
   const cur = localStorage.getItem('debugMode') === 'true';
+  AppState.debugMode = cur;
   const btn = document.getElementById('debug-toggle');
   if (btn) {
     btn.textContent = `占術を覗き見る：${cur ? 'ON' : 'OFF'}`;
@@ -651,7 +662,7 @@ const STORIES = {
     text:'アスファルトの下を、\nまだ水が流れている。\n\n道は{em}不自然に蛇行{/em}し、\nマンホールの蓋が、\n不規則に並んでいる。\n\nここは、かつて川だった。',
     facts:['水脈系','失われた川','時の層'] },
   ogawa: { name:'小 川', sub:'生きた水脈',
-    text:'今も水が、\n地上を流れている。\n\n小さなせせらぎ、\nコンクリートの護岸、\n両岸の雑草。\n\nここは{em}まだ川{/em}である。\n暗渠にされる前の、\n素直な水の形。',
+    text:'今も水が、\n地上を流れている。\n\n小さなせせらぎ、\nコンクリートの護岸、\n両岸の雑草。\n\nここは{em}まだ川{/em}である。\n暗渠にされる前の、\n素原な水の形。',
     facts:['水脈','生きた水'] },
   haisen: { name:'廃 線 跡', sub:'鉄路の記憶',
     text:'かつて鉄の塊が、\nここを{em}往復していた{/em}。\n\n今は草に覆われ、\n家々の隙間に、\n痕跡だけが残る。',
@@ -677,7 +688,7 @@ const STORIES = {
   waterfall: { name:'滝', sub:'堕ちる水・行場',
     text:'絶え間なく落下し続ける水。\n古来より行者が籠もり、\n{em}人智を超えたもの{/em}と\n対話するための場とされた。\n\n轟音の中に居ると、\n自分の輪郭が水音に溶けてゆく。',
     facts:['水行','聖域'] },
-  spring: { name:'湧 水', sup:'湧き出す境界',
+  spring: { name:'湧 水', sub:'湧き出す境界',
     text:'大地の奥底から、\n誰も見ぬ場所で、\n水が湧き続けている。\n\n古い人々はこれを\n{em}「神の通り道」{/em}と呼んだ。',
     facts:['霊水','地下'] },
   tree: { name:'巨 木', sub:'沈黙の証人',
@@ -777,10 +788,8 @@ if (dailyRecord.date !== new Date().toDateString()) {
 
 let userLat, userLon, spotLat, spotLon, chosenSpot = null;
 let routeLayer = null, selfMarker = null, destMarker = null, watchId = null;
-let arrived = false;
 let lastUserPos = null;
 let currentFilter = 'none';
-let debugMode = localStorage.getItem('debugMode') === 'true';
 
 // カメラ関連
 let cameraStream = null;
@@ -1137,7 +1146,12 @@ async function drawNavigation() {
   document.getElementById('debug-meta').textContent =
     `${story.sub || ''} / ${chosenSpot.dist}m / ${classify(chosenSpot).toUpperCase()}`;
   document.getElementById('debug-gmap').href = `https://maps.google.com/?q=${spotLat},${spotLon}`;
-  document.getElementById('debug-panel').style.display = 'block';
+  
+  if (AppState.debugMode) {
+    document.getElementById('debug-panel').style.display = 'block';
+  } else {
+    document.getElementById('debug-panel').style.display = 'none';
+  }
 
   updateDistance(userLat, userLon);
 
@@ -1152,7 +1166,9 @@ async function drawNavigation() {
     userLat = newLat; userLon = newLon;
     if (selfMarker) selfMarker.setLatLng([newLat, newLon]);
     updateDistance(newLat, newLon);
-  }, null, { enableHighAccuracy:true });
+  }, (err) => {
+    console.warn("GPS tracking error:", err);
+  }, { enableHighAccuracy:true, timeout: 8000, maximumAge: 3000 });
 }
 
 function updateDistance(lat, lon) {
@@ -1160,13 +1176,13 @@ function updateDistance(lat, lon) {
   document.getElementById('dist-val').textContent = d;
   const story = getStory(chosenSpot);
   document.getElementById('nav-hint').textContent = getHint(d, story);
-  if (d <= 40 && !arrived) {
-    arrived = true;
-    arrive();
+  if (d <= 40 && !AppState.arrived) {
+    AppState.arrived = true;
+    triggerArrival();
   }
 }
 
-function arrive() {
+function triggerArrival() {
   if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
   dailyRecord.arrivals++;
   const story = getStory(chosenSpot);
@@ -1234,9 +1250,18 @@ async function openCamera() {
       audio: false
     });
     video.srcObject = cameraStream;
+    // iOS Safari対策: 明示的なインライン・ミュート再生設定
+    video.setAttribute('playsinline', true);
+    video.setAttribute('muted', true);
+    video.muted = true;
+    
     video.style.display = 'block';
-    vf.classList.remove('empty');
-    document.getElementById('cam-shutter').disabled = false;
+    // トラックが有効化されてからレンダリング状態を更新
+    video.onloadedmetadata = () => {
+      video.play().catch(e => console.warn("Play failed:", e));
+      vf.classList.remove('empty');
+      document.getElementById('cam-shutter').disabled = false;
+    };
   } catch (e) {
     console.error('Camera error:', e);
     if (e.name === 'NotAllowedError') {
@@ -1255,7 +1280,7 @@ function closeCamera() {
     cameraStream = null;
   }
   const video = document.getElementById('cam-video');
-  video.srcObject = null;
+  if (video) video.srcObject = null;
 }
 
 function applyFilter(filterName) {
@@ -1264,7 +1289,7 @@ function applyFilter(filterName) {
   vf.style.filter = FILTERS[filterName] || 'none';
 }
 
-// 撮影：videoのフレームをcanvasに焼き込み（フィルター込み）
+// 撮影：videoのフレームをcanvasに焼き込み（3:4クリッピングとフィルター適用）
 async function capturePhoto() {
   const video = document.getElementById('cam-video');
   if (!video || !video.videoWidth) {
@@ -1273,13 +1298,28 @@ async function capturePhoto() {
   }
 
   const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
+  // CSSアスペクト比 3:4 に固定してクリッピング計算を行う（歪み防止）
+  const vWidth = video.videoWidth;
+  const vHeight = video.videoHeight;
+  
+  let targetWidth = vWidth;
+  let targetHeight = vWidth * (4 / 3);
+  
+  if (targetHeight > vHeight) {
+    targetHeight = vHeight;
+    targetWidth = vHeight * (3 / 4);
+  }
+  
+  const sx = (vWidth - targetWidth) / 2;
+  const sy = (vHeight - targetHeight) / 2;
+
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
   const ctx = canvas.getContext('2d');
 
   // フィルターを焼き込む
   ctx.filter = FILTERS[currentFilter] || 'none';
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  ctx.drawImage(video, sx, sy, targetWidth, targetHeight, 0, 0, targetWidth, targetHeight);
 
   // BlobとdataURLを生成
   capturedBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
@@ -1471,7 +1511,7 @@ document.getElementById('nav-back').addEventListener('click', () => {
 });
 
 function resetForNew() {
-  arrived = false;
+  AppState.arrived = false;
   chosenSpot = null;
   closeCamera();
   if (destMarker && map) { map.removeLayer(destMarker); destMarker = null; }
