@@ -9,66 +9,98 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; overflow: hidden; background: #050307; color: #e8d9b8; font-family: 'Shippori Mincho', serif; }
+html, body { height: 100%; overflow: hidden; background: #030205; color: #f1e6cf; font-family: 'Shippori Mincho', serif; }
 
-/* ===== 空間演出レイヤー ===== */
-#map { position: absolute; inset: 0; z-index: 0; background: #09060f; }
-.vignette { position: absolute; inset: 0; pointer-events: none; z-index: 2; background: radial-gradient(circle, transparent 30%, rgba(5,3,7,0.85) 100%); }
-.ambient-glow { position: absolute; inset: 0; pointer-events: none; z-index: 1; background: radial-gradient(circle at 80% 20%, rgba(94,55,120,0.22), transparent 45%), radial-gradient(circle at 10% 80%, rgba(212,175,106,0.15), transparent 50%); will-change: transform; animation: ambientSwing 25s ease-in-out infinite alternate; }
-@keyframes ambientSwing { 0% { transform: scale(1); } 100% { transform: scale(1.12) translate(8px, -8px); } }
-.scanlines { position: absolute; inset: 0; pointer-events: none; z-index: 3; background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.35) 50%), linear-gradient(90deg, rgba(255,0,0,0.02), rgba(0,255,0,0.01), rgba(0,0,255,0.02)); background-size: 100% 4px, 6px 100%; opacity: 0.6; }
+/* ===== 儀式的空間レイヤー ===== */
+#map { position: absolute; inset: 0; z-index: 0; filter: contrast(1.1) brightness(0.7) hue-rotate(15deg); background: #040306; }
+.vignette { position: absolute; inset: 0; pointer-events: none; z-index: 2; background: radial-gradient(circle, transparent 20%, rgba(3,2,5,0.92) 100%); }
+.ambient-glow { position: absolute; inset: 0; pointer-events: none; z-index: 1; background: radial-gradient(circle at 80% 20%, rgba(76,41,102,0.25), transparent 50%), radial-gradient(circle at 10% 80%, rgba(184,142,66,0.12), transparent 50%); will-change: transform; animation: ambientSwing 30s ease-in-out infinite alternate; }
+@keyframes ambientSwing { 0% { transform: scale(1); } 100% { transform: scale(1.15) translate(4px, -4px); } }
+.scanlines { position: absolute; inset: 0; pointer-events: none; z-index: 3; background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.4) 50%); background-size: 100% 4px; opacity: 0.4; }
 
 #particles { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
-.particle { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #d4af6a; box-shadow: 0 0 8px #d4af6a; animation: floatUp linear infinite; will-change: transform; }
+.particle { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #b88e42; box-shadow: 0 0 6px #b88e42; animation: floatUp linear infinite; will-change: transform; }
 @keyframes floatUp {
-  from { transform: translateY(105vh) scale(0.5); opacity: 0; }
-  20% { opacity: 0.6; }
-  80% { opacity: 0.6; }
-  to { transform: translateY(-5vh) scale(1.2); opacity: 0; }
+  from { transform: translateY(105vh) scale(0.6); opacity: 0; }
+  30% { opacity: 0.4; }
+  70% { opacity: 0.4; }
+  to { transform: translateY(-5vh) scale(1); opacity: 0; }
 }
 
-/* ===== 重厚感のあるUIデザイン ===== */
-#top-overlay { position: absolute; top: 0; left: 0; right: 0; padding: 48px 24px 28px; background: linear-gradient(to bottom, #050307 40%, rgba(5,3,7,0.7) 75%, transparent); z-index: 100; pointer-events: none; }
-#brand-jp { font-size: 28px; font-weight: 800; letter-spacing: 0.35em; color: transparent; background: linear-gradient(135deg, #f3e5c8, #d4af6a 40%, #8b6f3a); -webkit-background-clip: text; background-clip: text; text-shadow: 0 0 15px rgba(212,175,106,0.25); }
-#tagline { font-size: 10px; color: #7a6985; margin-top: 6px; letter-spacing: 0.15em; font-style: italic; text-shadow: 1px 1px 2px #000; }
+/* ===== 洗練されたアプリアプローチのUI ===== */
+#top-overlay { position: absolute; top: 0; left: 0; right: 0; padding: 40px 24px 32px; background: linear-gradient(to bottom, #030205 50%, rgba(3,2,5,0.8) 80%, transparent); z-index: 100; pointer-events: none; text-align: center; }
+#brand-jp { font-size: 26px; font-weight: 800; letter-spacing: 0.5em; color: transparent; background: linear-gradient(135deg, #fffcf5, #cfa861 50%, #80622d); -webkit-background-clip: text; background-clip: text; text-shadow: 0 0 20px rgba(207,168,97,0.2); margin-left: 0.5em; }
+#tagline { font-size: 9px; color: #61536b; margin-top: 8px; letter-spacing: 0.2em; font-style: italic; }
 
-#mode-bar { position: absolute; top: 115px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; gap: 6px; background: rgba(12,9,18,0.85); border: 1px solid rgba(212,175,106,0.35); border-radius: 24px; padding: 5px 8px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 8px 32px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.05); }
-.mode-btn { width: 38px; height: 38px; border-radius: 50%; border: none; background: transparent; color: #5a4a60; font-size: 16px; cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; align-items: center; justify-content: center; }
-.mode-btn.active { background: linear-gradient(135deg, rgba(212,175,106,0.2), rgba(94,55,120,0.25)); color: #d4af6a; border: 1px solid rgba(212,175,106,0.4); box-shadow: 0 0 10px rgba(212,175,106,0.2); transform: scale(1.08); }
+/* 移動モード＆属性フィルター統合型バー */
+#control-panel { position: absolute; top: 110px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; flex-direction: column; gap: 8px; width: 90%; max-width: 340px; }
+#mode-bar { display: flex; background: rgba(8,6,12,0.92); border: 1px solid rgba(207,168,97,0.25); border-radius: 12px; padding: 3px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 12px 32px rgba(0,0,0,0.8); }
+.mode-btn { flex: 1; padding: 10px 0; border: none; background: transparent; color: #53455c; font-size: 11px; font-weight: 800; font-family: inherit; letter-spacing: 0.15em; cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); border-radius: 9px; text-transform: uppercase; }
+.mode-btn.active { background: linear-gradient(135deg, rgba(207,168,97,0.12), rgba(103,56,133,0.18)); color: #cfa861; border: 1px solid rgba(207,168,97,0.35); box-shadow: 0 0 12px rgba(207,168,97,0.15); }
 
-#dist-badge { position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%); z-index: 100; display: none; background: radial-gradient(circle, #120d1a 0%, #050307 100%); border: 1px solid rgba(212,175,106,0.45); border-radius: 20px; padding: 16px 36px; text-align: center; pointer-events: none; box-shadow: 0 12px 40px rgba(0,0,0,0.7), inset 0 0 15px rgba(94,55,120,0.3); }
-#dist-badge.show { display: block; animation: badgeFloat 4s ease-in-out infinite; }
-@keyframes badgeFloat { 0%, 100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, -56%); } }
-#dist-num { font-size: 34px; font-weight: 800; color: transparent; background: linear-gradient(135deg, #fff, #d4af6a); -webkit-background-clip: text; background-clip: text; letter-spacing: -0.02em; text-shadow: 0 0 12px rgba(212,175,106,0.4); }
-#dist-unit { font-size: 9px; color: #6a5a70; margin-top: 4px; letter-spacing: 0.25em; text-transform: uppercase; }
+#filter-bar { display: flex; gap: 8px; }
+.filter-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 11px; background: rgba(8,6,12,0.92); border: 1px solid rgba(207,168,97,0.2); border-radius: 12px; color: #6b5c75; font-size: 12px; font-weight: 600; font-family: inherit; letter-spacing: 0.2em; cursor: pointer; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: all 0.3s; }
+/* 幾何学アイコンの定義 */
+.ico-geo { width: 12px; height: 12px; position: relative; display: inline-block; transition: all 0.3s; }
+/* 詩情：星芒（正方形を45度ずらして重ねた八芒星の核） */
+#emotion-btn .ico-geo { border: 1px solid #6b5c75; transform: rotate(0deg); }
+#emotion-btn .ico-geo::before { content:""; position: absolute; inset: -1px; border: 1px solid #6b5c75; transform: rotate(45deg); }
+#emotion-btn.active { color: #cfa861; border-color: rgba(207,168,97,0.5); background: rgba(207,168,97,0.06); box-shadow: 0 0 15px rgba(207,168,97,0.15); }
+#emotion-btn.active .ico-geo, #emotion-btn.active .ico-geo::before { border-color: #cfa861; filter: drop-shadow(0 0 3px #cfa861); }
+/* 怪異：逆三角（儀式的な刻印としての楔型） */
+#horror-btn .ico-geo { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 11px solid #6b5c75; background: transparent; }
+#horror-btn.active { color: #a67bc2; border-color: rgba(166,123,194,0.5); background: rgba(103,56,133,0.08); box-shadow: 0 0 15px rgba(166,123,194,0.15); }
+#horror-btn.active .ico-geo { border-top-color: #a67bc2; filter: drop-shadow(0 0 3px #a67bc2); }
 
-#debug-panel { display: none; position: absolute; top: 175px; left: 50%; transform: translateX(-50%); z-index: 100; background: rgba(5,3,7,0.85); border: 1px solid rgba(212,175,106,0.35); border-radius: 12px; padding: 10px 16px; font-size: 11px; text-align: center; width: 88%; max-width: 320px; color: #d4af6a; backdrop-filter: blur(8px); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+/* 距離表示のバッジ */
+#dist-badge { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); z-index: 100; display: none; background: radial-gradient(circle, #0e0914 0%, #030205 100%); border: 1px solid rgba(207,168,97,0.35); border-radius: 24px; padding: 20px 40px; text-align: center; pointer-events: none; box-shadow: 0 16px 48px rgba(0,0,0,0.85), inset 0 0 20px rgba(103,56,133,0.25); }
+#dist-badge.show { display: block; animation: badgeFloat 5s ease-in-out infinite; }
+@keyframes badgeFloat { 0%, 100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, -54%); } }
+#dist-num { font-size: 38px; font-weight: 800; color: transparent; background: linear-gradient(135deg, #ffffff, #cfa861); -webkit-background-clip: text; background-clip: text; letter-spacing: -0.01em; text-shadow: 0 0 15px rgba(207,168,97,0.35); }
+#dist-unit { font-size: 9px; color: #53455c; margin-top: 6px; letter-spacing: 0.3em; text-transform: uppercase; }
 
-#bottom { position: absolute; bottom: 0; left: 0; right: 0; z-index: 100; padding: 24px 20px 44px; background: linear-gradient(to top, #050307 75%, transparent); }
-#go-btn { width: 100%; padding: 18px 0; border-radius: 16px; border: 1px solid rgba(212,175,106,0.5); background: linear-gradient(135deg, rgba(25,18,35,0.9), rgba(15,10,22,0.9)); color: #f0d49a; font-size: 15px; font-weight: 700; font-family: inherit; letter-spacing: 0.3em; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05); transition: all 0.3s; -webkit-appearance: none; }
-#go-btn:active { background: rgba(212,175,106,0.15); transform: translateY(1px); }
-#go-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-#error-msg { display: none; font-size: 11px; color: #c89090; margin-bottom: 12px; padding: 10px; background: rgba(40,10,20,0.6); border: 1px solid rgba(180,80,80,0.4); border-radius: 8px; text-align: center; }
+/* 下部操作領域 */
+#bottom { position: absolute; bottom: 0; left: 0; right: 0; z-index: 100; padding: 24px 24px 48px; background: linear-gradient(to top, #030205 80%, transparent); display: flex; flex-direction: column; gap: 12px; }
+#go-btn { width: 100%; padding: 20px 0; border-radius: 14px; border: 1px solid rgba(207,168,97,0.4); background: linear-gradient(135deg, #0f0b14, #050408); color: #cfa861; font-size: 14px; font-weight: 700; font-family: inherit; letter-spacing: 0.4em; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.03); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); text-indent: 0.4em; -webkit-appearance: none; }
+#go-btn:active { background: rgba(207,168,97,0.12); border-color: #cfa861; transform: scale(0.99); }
+#go-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+#error-msg { display: none; font-size: 11px; color: #d98888; padding: 12px; background: rgba(30,10,15,0.7); border: 1px solid rgba(217,136,136,0.3); border-radius: 10px; text-align: center; line-height: 1.6; }
 
-/* ===== REVEAL MODAL ===== */
-#reveal-modal { display: none; position: absolute; inset: 0; z-index: 300; background: radial-gradient(circle at center, #11091c 0%, #040206 100%); flex-direction: column; align-items: center; justify-content: center; padding: 28px; text-align: center; opacity: 0; transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+/* 情報簡易閲覧パネル */
+#debug-panel { display: none; background: rgba(4,3,6,0.95); border: 1px solid rgba(207,168,97,0.3); border-radius: 14px; padding: 16px 20px; font-size: 12px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.7); backdrop-filter: blur(8px); }
+#debug-name { font-weight: 800; font-size: 14px; color: #fffcf5; letter-spacing: 0.05em; margin-bottom: 4px; }
+#debug-meta { font-size: 11px; color: #877494; letter-spacing: 0.02em; margin-bottom: 12px; }
+#debug-gmap { display: inline-block; color: #cfa861; text-decoration: none; font-size: 11px; letter-spacing: 0.1em; border-bottom: 1px solid rgba(207,168,97,0.4); padding-bottom: 2px; transition: color 0.2s; }
+#debug-gmap:hover { color: #fff; border-bottom-color: #fff; }
+
+/* ===== 儀式開門（REVEAL MODAL） ===== */
+#reveal-modal { display: none; position: absolute; inset: 0; z-index: 300; background: radial-gradient(circle at center, #0f0a17 0%, #030205 100%); flex-direction: column; align-items: center; justify-content: center; padding: 32px; text-align: center; opacity: 0; transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
 #reveal-modal.show { display: flex; opacity: 1; }
-#reveal-icon { font-size: 64px; margin-bottom: 16px; filter: drop-shadow(0 0 20px rgba(212,175,106,0.5)); animation: floatGlow 3s ease-in-out infinite; }
-@keyframes floatGlow { 0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 15px rgba(212,175,106,0.4)); } 50% { transform: translateY(-6px); filter: drop-shadow(0 0 25px rgba(94,55,120,0.7)); } }
-#reveal-name { font-size: 24px; font-weight: 800; color: transparent; background: linear-gradient(135deg, #fff, #f6e3be 40%, #d4af6a); -webkit-background-clip: text; background-clip: text; margin-bottom: 8px; letter-spacing: 0.08em; line-height: 1.4; text-shadow: 0 0 20px rgba(255,255,255,0.1); }
-#reveal-cat { font-size: 10px; color: #d4af6a; margin-bottom: 24px; letter-spacing: 0.25em; border: 1px solid rgba(212,175,106,0.4); padding: 3px 16px; border-radius: 20px; background: rgba(12,9,18,0.6); box-shadow: inset 0 0 8px rgba(94,55,120,0.4); }
-#reveal-desc { font-size: 13px; color: #c4b5cb; line-height: 1.9; margin-bottom: 36px; max-width: 300px; text-align: left; text-indent: 1em; padding: 16px; background: rgba(5,3,7,0.4); border-radius: 12px; border: 1px solid rgba(212,175,106,0.15); box-shadow: inset 0 0 20px rgba(0,0,0,0.6); }
-#reveal-actions { display: flex; gap: 12px; width: 100%; max-width: 300px; }
-.reveal-btn { flex: 1; padding: 14px 0; border-radius: 12px; border: 1px solid rgba(212,175,106,0.3); background: rgba(12,9,18,0.7); color: #8d7b94; font-size: 13px; font-family: inherit; font-weight: 600; letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; }
-.reveal-btn.primary { background: linear-gradient(135deg, rgba(212,175,106,0.25), rgba(94,55,120,0.25)); color: #f0d49a; border-color: #d4af6a; box-shadow: 0 4px 15px rgba(212,175,106,0.2); }
+#reveal-crest { width: 44px; height: 44px; margin-bottom: 24px; position: relative; animation: crestRotate 12s linear infinite; }
+#reveal-crest::before, #reveal-crest::after { content: ""; position: absolute; inset: 0; border: 1px solid rgba(207,168,97,0.4); }
+#reveal-crest::before { transform: rotate(30deg); }
+#reveal-crest::after { transform: rotate(60deg); }
+@keyframes crestRotate { from { transform: rotate(0deg); filter: drop-shadow(0 0 4px rgba(207,168,97,0.3)); } to { transform: rotate(360deg); filter: drop-shadow(0 0 12px rgba(207,168,97,0.6)); } }
 
-/* ===== マップピン ===== */
-.q-marker { width: 34px; height: 34px; background: radial-gradient(circle at 35% 35%, #ecdbb5, #8b6f3a); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; position: relative; }
-.q-marker::before { content: ""; position: absolute; inset: -8px; border-radius: 50%; border: 1px solid rgba(212,175,106,0.5); animation: pinPulse 2s cubic-bezier(0.215, 0.610, 0.355, 1) infinite; pointer-events: none; }
-@keyframes pinPulse { from { transform: scale(0.6); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
-.q-marker-inner { transform: rotate(45deg); font-size: 14px; font-weight: 800; color: #050307; }
+#reveal-label { font-size: 9px; color: #80622d; letter-spacing: 0.6em; margin-bottom: 8px; text-indent: 0.6em; }
+#reveal-name { font-size: 24px; font-weight: 800; color: #fffcf5; margin-bottom: 12px; letter-spacing: 0.1em; line-height: 1.5; text-shadow: 0 0 24px rgba(255,255,255,0.15); }
+#reveal-cat { font-size: 10px; color: #cfa861; margin-bottom: 28px; letter-spacing: 0.2em; border: 1px solid rgba(207,168,97,0.3); padding: 4px 20px; border-radius: 20px; background: rgba(8,6,12,0.6); box-shadow: inset 0 0 10px rgba(103,56,133,0.3); }
+#reveal-desc { font-size: 13px; color: #c0b2c7; line-height: 2.0; margin-bottom: 40px; max-width: 320px; text-align: left; text-indent: 1em; padding: 20px; background: rgba(4,3,6,0.5); border-radius: 12px; border: 1px solid rgba(207,168,97,0.15); box-shadow: inset 0 4px 20px rgba(0,0,0,0.8); overflow-y: auto; max-height: 35vh; }
+/* スクロールバーの非表示化（美観のため） */
+#reveal-desc::-webkit-scrollbar { width: 0; }
 
-.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(212,175,106,0.2); border-top-color: #d4af6a; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: -2px; }
+#reveal-actions { display: flex; gap: 14px; width: 100%; max-width: 320px; }
+.reveal-btn { flex: 1; padding: 16px 0; border-radius: 10px; border: 1px solid rgba(207,168,97,0.25); background: rgba(8,6,12,0.8); color: #766580; font-size: 12px; font-family: inherit; font-weight: 600; letter-spacing: 0.15em; cursor: pointer; transition: all 0.3s; -webkit-appearance: none; }
+.reveal-btn.primary { background: linear-gradient(135deg, rgba(207,168,97,0.2), rgba(103,56,133,0.2)); color: #fffcf5; border-color: #cfa861; box-shadow: 0 4px 20px rgba(207,168,97,0.25); }
+.reveal-btn:active { transform: scale(0.98); }
+
+/* ===== 特製幾何学マップピン ===== */
+.q-marker { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; position: relative; }
+.q-marker-ring { position: absolute; inset: 0; border: 1px solid #cfa861; transform: rotate(45deg); animation: pulseRing 3s ease-out infinite; }
+.q-marker-dot { width: 6px; height: 6px; background: #fff; border-radius: 50%; box-shadow: 0 0 10px #cfa861; }
+@keyframes pulseRing { 0% { transform: rotate(45deg) scale(0.6); opacity: 1; } 100% { transform: rotate(225deg) scale(2.2); opacity: 0; } }
+
+.spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(207,168,97,0.15); border-top-color: #cfa861; border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 10px; vertical-align: -1px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
@@ -82,16 +114,19 @@ html, body { height: 100%; overflow: hidden; background: #050307; color: #e8d9b8
 
 <div id="top-overlay">
   <div id="brand-jp">幽路</div>
-  <div id="tagline">— 行き先は、辿り着いた者のみ知る —</div>
+  <div id="tagline">— 現世の網目を手繰る、境界の調律針 —</div>
 </div>
 
-<div id="mode-bar">
-  <button class="mode-btn active" data-mode="foot" title="徒歩">🚶</button>
-  <button class="mode-btn" data-mode="bike" title="自転車">🚴</button>
-  <button class="mode-btn" data-mode="car" title="車">🚗</button>
-  <div style="width:1px; background:rgba(212,175,106,0.2); margin:6px 2px;"></div>
-  <button class="mode-btn" id="emotion-btn" title="詩情（エモ・風景・トマソン）">✨</button>
-  <button class="mode-btn" id="horror-btn" title="怪異（伝承・結界・不穏）">👻</button>
+<div id="control-panel">
+  <div id="mode-bar">
+    <button class="mode-btn active" data-mode="foot">Foot</button>
+    <button class="mode-btn" data-mode="bike">Bike</button>
+    <button class="mode-btn" data-mode="car">Car</button>
+  </div>
+  <div id="filter-bar">
+    <button class="filter-btn" id="emotion-btn"><span class="ico-geo"></span>詩情</button>
+    <button class="filter-btn" id="horror-btn"><span class="ico-geo"></span>怪異</button>
+  </div>
 </div>
 
 <div id="dist-badge">
@@ -99,34 +134,34 @@ html, body { height: 100%; overflow: hidden; background: #050307; color: #e8d9b8
   <div id="dist-unit">Distance</div>
 </div>
 
-<div id="debug-panel">
-  <div id="debug-name" style="font-weight:700; font-size:13px; margin-bottom:2px;"></div>
-  <div id="debug-meta" style="font-size:10px; opacity:0.6; margin-bottom:8px;"></div>
-  <a id="debug-gmap" href="#" target="_blank" rel="noopener" style="color:#d4af6a; text-decoration:none; font-size:11px; border-bottom: 1px dotted #d4af6a;">[ 現世の地図で確認 ↗ ]</a>
-</div>
-
 <div id="bottom">
   <div id="error-msg"></div>
-  <button id="go-btn">どこか連れてって</button>
+  <div id="debug-panel">
+    <div id="debug-name"></div>
+    <div id="debug-meta"></div>
+    <a id="debug-gmap" href="#" target="_blank" rel="noopener">[ 現世の座標を開く ]</a>
+  </div>
+  <button id="go-btn">針を穿つ</button>
 </div>
 
 <div id="reveal-modal">
-  <div id="reveal-icon">📍</div>
-  <div id="reveal-label" style="font-size:9px; color:#8b7355; letter-spacing:0.5em; margin-bottom:4px;">REVEALED</div>
-  <div id="reveal-name">謎の場所</div>
-  <div id="reveal-cat">不明</div>
+  <div id="reveal-crest"></div>
+  <div id="reveal-label">GATE OPENED</div>
+  <div id="reveal-name">境界の地</div>
+  <div id="reveal-cat">識別不能</div>
   <div id="reveal-desc"></div>
   <div id="reveal-actions">
-    <button class="reveal-btn" id="reveal-bad">此処を除外</button>
-    <button class="reveal-btn primary" id="reveal-again">再び旅立つ</button>
+    <button class="reveal-btn" id="reveal-bad">此処を忘却</button>
+    <button class="reveal-btn primary" id="reveal-again">再び紐解く</button>
   </div>
 </div>
 
 <script>
 const OSRM = 'https://router.project-osrm.org/route/v1';
 const OVERPASS_SERVERS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
-const NICHIBUNKEN_SPARQL = 'https://enamdict.nichibun.ac.jp/sparql'; // 日文研 怪異・妖怪エンドポイント
+const NICHIBUNKEN_SPARQL = 'https://enamdict.nichibun.ac.jp/sparql';
 
+// ★ 車の射程を15km（15000m）まで引き上げ
 const DIST_CONFIG = {
   foot: { min: 200, max: 1500 },
   bike: { min: 1500, max: 5000 },
@@ -138,15 +173,14 @@ const OSRM_PROFILE = { foot: 'foot', bike: 'bike', car: 'driving' };
 const HORROR_KEYWORDS = /血|鬼|呪|死|首|怨|霊|怪|妖|幽|地獄|供養|無縁|殉難|塚|骨|闇|魔|隠|仏/;
 const EMOTION_KEYWORDS = /民話|伝説|文学|物語|名木|巨木|奇岩|滝|湧水|名水|古道|旧道|城跡|跡|庵|碑|灯籠|橋/;
 
-// 文脈に応じた叙情的な語り
 const STORIES = {
-  nichibunken: "【日文研 古伝承】此処は文献に記録された本物の怪異地。かつて現世の住人が遭遇し、畏れ震えたモノの記憶が、今も大地の底から陽炎のように立ち上っている。",
-  ankyo: "【都市の盲腸 - 暗渠】かつて陽の光を浴びて流れていた川が、コンクリートの底に幽閉された場所。耳を澄ますと、足元から現世のノイズを拒絶する水の囁きが聞こえる。",
-  tomason: "【超芸術 - トマソン】上る先のない階段、開かない高所の扉。都市の開発エラーが産み落とした、無目的かつ純粋な建築のバグが、静かに通行人を見下ろしている。",
-  kekkai: "【路傍の結界】不自然に配置された石、あるいは奇妙な行き止まり。それ以上先へ進むことを何かが拒んでいる、あるいは『何か』を外に出さないための境界線。",
-  view: "【現世を見下ろす高台】世界が一望できる、吹き抜けの境界。ここから見下ろす街並みはどこかミニチュアのようで、自分が現世から少し浮き上がったような錯覚に囚われる。",
-  bench: "【水辺の空白】川のせせらぎや波の音だけが支配する、ポツンと残されたベンチ。誰を待つでもなく、ただ時間を忘れて世界の境界線に浸るための特等席。",
-  default: "現世の合理的な都市開発から奇跡的にこぼれ落ちた、時間線の空白地帯。かつてここに何があったのか、それを知る術は失われているが、土地の記憶だけが確かに息づいている。"
+  nichibunken: "【古伝承の刻印】国際日本文化研究センターの紐解いた怪異地。文献が証明する「真の怪異」の座。かつて現世の住人が怪異を視、畏れ慄いた記憶が、数百年の時を超えて今も大地の底から陽炎のように立ち上っている。",
+  ankyo: "【都市の盲腸 - 暗渠跡】かつて陽の光を浴びて流れていた生きた川が、コンクリートの下へ幽閉された境界。耳を澄ますと、足元から現世のノイズを拒絶する水の微かな囁きと、かつてのせせらぎの亡霊が聞こえる。",
+  tomason: "【超芸術 - 建築のバグ】上る先のない屋外階段、開かない高所の扉。都市の合理的な開発エラーが産み落とした、無目的かつ純粋なトマソン。誰のためでもないその歪な存在が、静かに通行人を見下ろしている。",
+  kekkai: "【路傍の結界 - 境界】不自然に据え置かれた石、奇妙な袋小路、あるいは古びた祠。それ以上先へ進むことを何かが拒んでいるのか、あるいは『内なる何か』を現世に出さないための、名もなき古い境界線。",
+  view: "【現世を望む高台】世界を俯瞰する、吹き抜けの境界。ここから見下ろす街の灯りはどこかミニチュアのようで、世界の連続性から自分だけが切り離され、少し浮き上がったような錯覚に囚われる。",
+  bench: "【水辺の空白 - 止水】川のせせらぎや波の音だけが世界の輪郭を象る、ポツンと残されたベンチ。誰かを待つためではなく、ただ時間を忘れて現世の境界線に身を浸すために用意された特等席。",
+  default: "現世の合理的な都市開発から奇跡的にこぼれ落ちた、時間線の空白地帯。かつてここに何があり、誰が去ったのか。それを知る術は失われているが、土地の記憶だけがこの空間に静かに息づいている。"
 };
 
 let mode = 'foot', emotion = false, horror = false;
@@ -160,12 +194,12 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
 }).addTo(map);
 
 const selfIcon = L.divIcon({
-  html: `<div style="width:14px;height:14px;background:#d4af6a;border:2px solid #fff;border-radius:50%;box-shadow:0 0 12px #d4af6a;"></div>`,
-  className: '', iconAnchor: [7, 7]
+  html: `<div style="width:12px;height:12px;background:#fff;border:1px solid #cfa861;border-radius:50%;box-shadow:0 0 15px #cfa861;"></div>`,
+  className: '', iconAnchor: [6, 6]
 });
 const destIcon = L.divIcon({
-  html: '<div class="q-marker"><div class="q-marker-inner">?</div></div>',
-  className: '', iconAnchor: [17, 34]
+  html: '<div class="q-marker"><div class="q-marker-ring"></div><div class="q-marker-dot"></div></div>',
+  className: '', iconAnchor: [12, 12]
 });
 
 function haversine(lat1, lon1, lat2, lon2) {
@@ -176,54 +210,45 @@ function haversine(lat1, lon1, lat2, lon2) {
   return Math.round(R*2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 }
 
-// 取得した地点の属性からリッチなコンテキストを動的判定
 function getDetails(s) {
   if (s.source === 'nichibunken') {
     return {
       name: s.name || '伝承の怪異地',
-      icon: '👻',
-      cat: '日文研・妖怪伝承の地',
-      desc: `${STORIES.nichibunken}\n\n《記録》${s.desc || '詳細は闇の中。'}`
+      cat: '古伝承・妖怪怪異地',
+      desc: `${STORIES.nichibunken}\n\n《伝承記録》\n${s.desc || '詳細は闇の中。'}`
     };
   }
 
   const t = s.tags || {};
   let name = s.name || t.name || t['name:ja'] || '名無き境界';
-  let icon = '📍';
   let cat = '隠れた空白地帯';
   let desc = STORIES.default;
 
-  // 暗渠・地下水路の判定
   if (t.tunnel === 'culvert' || t.waterway === 'canal' || t.waterway === 'stream') {
     name = t.name ? `${t.name}（暗渠領域）` : '微かな水の這う暗渠';
-    icon = '🌊'; cat = '都市の盲腸 - 暗渠跡'; desc = STORIES.ankyo;
+    cat = '都市の盲腸 - 暗渠跡'; desc = STORIES.ankyo;
   }
-  // 高台・崖・見晴らしの判定
   else if (t.natural === 'cliff' || t.natural === 'ridge' || t.tourism === 'viewpoint') {
     name = t.name || '見晴らしの良い高台';
-    icon = '🔭'; cat = '現世を見下ろす高台'; desc = STORIES.view;
+    cat = '現世を見下ろす高台'; desc = STORIES.view;
   }
-  // 川沿い・水辺のベンチ判定
   else if (t.amenity === 'bench' || t.leisure === 'park') {
     name = t.name || '世界の果てのベンチ';
-    icon = '🪑'; cat = '水辺の穴場・公園'; desc = STORIES.bench;
+    cat = '水辺の穴場・公園空間'; desc = STORIES.bench;
   }
-  // トマソン・不自然な障壁・行き止まり判定
   else if (t.barrier === 'block' || t.barrier === 'wall' || t.highway === 'dead_end') {
     name = '超芸術トマソン的隙間';
-    icon = '🚪'; cat = '純粋建築のバグ'; desc = STORIES.tomason;
+    cat = '純粋建築のバグ'; desc = STORIES.tomason;
   }
-  // お地蔵さん・祠・結界判定
   else if (t.historic === 'wayside_shrine' || t.historic === 'wayside_cross') {
     name = t.name || '路傍のお地蔵さん';
-    icon = '🪦'; cat = '路傍の結界・祠'; desc = STORIES.kekkai;
+    cat = '路傍の結界・祠'; desc = STORIES.kekkai;
   }
-  // 一般的な社寺や自然物
-  else if (t.amenity === 'place_of_worship') { icon = '⛩️'; cat = '由緒ある社寺の影'; }
-  else if (t.natural === 'tree') { icon = '🌳'; cat = '老木・巨木の境界'; }
+  else if (t.amenity === 'place_of_worship') { cat = '由緒ある社寺の影'; }
+  else if (t.natural === 'tree') { cat = '老木・巨木の境界'; }
 
-  const subInfo = t.description ? `\n\n（現世のタグ: ${t.description}）` : '';
-  return { name, icon, cat, desc: desc + subInfo };
+  const subInfo = t.description ? `\n\n《現世の追記》\n${t.description}` : '';
+  return { name, cat, desc: desc + subInfo };
 }
 
 function showError(msg) { const e = document.getElementById('error-msg'); e.textContent = msg; e.style.display = 'block'; }
@@ -244,7 +269,6 @@ function checkArrival(lat, lon) {
   if (d <= 40) {
     if (watchId) navigator.geolocation.clearWatch(watchId);
     const details = getDetails(chosenSpot);
-    document.getElementById('reveal-icon').textContent = details.icon;
     document.getElementById('reveal-name').textContent = details.name;
     document.getElementById('reveal-cat').textContent = details.cat;
     document.getElementById('reveal-desc').textContent = details.desc;
@@ -263,12 +287,9 @@ function updateLocation(lat, lon) {
   checkArrival(lat, lon);
 }
 
-// 🟢 1. [API発射] 日文研の怪異・妖怪伝承データをSPARQL経由で取得
 async function fetchNichibunken(lat, lon, radiusKm) {
-  // ユーザー周辺の緯度経度矩形を簡易計算
   const dLat = radiusKm / 111;
   const dLon = radiusKm / (111 * Math.cos(lat * Math.PI / 180));
-  
   const minLat = lat - dLat, maxLat = lat + dLat;
   const minLon = lon - dLon, maxLon = lon + dLon;
 
@@ -280,7 +301,7 @@ async function fetchNichibunken(lat, lon, radiusKm) {
          schema:geo [ schema:latitude ?lat ; schema:longitude ?long ] .
       OPTIONAL { ?s schema:description ?desc . }
       FILTER(?lat >= ${minLat} && ?lat <= ${maxLat} && ?long >= ${minLon} && ?long <= ${maxLon})
-    } LIMIT 30
+    } LIMIT 40
   `;
 
   try {
@@ -296,12 +317,11 @@ async function fetchNichibunken(lat, lon, radiusKm) {
       id: 'nbk-' + i + '-' + b.label.value
     }));
   } catch (e) {
-    console.warn("日文研API通信エラー (タイムアウトまたは混雑):", e);
-    return []; // 落ちてもアプリは死なさず、OSM側で救済する
+    console.warn("日文研API接続遅延:", e);
+    return [];
   }
 }
 
-// 🟢 2. [API発射] OSM（Overpass）の超強化クエリ（高台・暗渠・ベンチ・トマソン追加）
 async function fetchOSM(lat, lon, radiusM) {
   const filterString = `
     nw["historic"](around:${radiusM},${lat},${lon});
@@ -333,70 +353,64 @@ async function fetchOSM(lat, lon, radiusM) {
   return [];
 }
 
-// ⚡ 2つのAPIを「同時に叩いて」「ガッチャンコ」する主幹ロジック
 async function startJourney() {
   hideError();
-  setBtnState(true, '霊脈と古伝承を同期中...');
+  setBtnState(true, '占術同調中...');
   
   try {
     const pos = await new Promise((res, rej) => {
       navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 8000 });
     });
     updateLocation(pos.coords.latitude, pos.coords.longitude);
-    map.setView([userLat, userLon], 15);
+    map.setView([userLat, userLon], 14);
     
     const cfg = DIST_CONFIG[mode];
     const radiusKm = cfg.max / 1000;
 
-    // ★ 同時（並列）にAPIリクエストを投げて、両方待つ
     const [nichibunkenList, osmList] = await Promise.all([
       fetchNichibunken(userLat, userLon, radiusKm),
       fetchOSM(userLat, userLon, cfg.max)
     ]);
 
-    // リストを1つの巨大な「現世の境界リスト」に結合
     let list = [...nichibunkenList, ...osmList];
     
-    // 距離計算と範囲フィルタ
     list.forEach(s => s.dist = haversine(userLat, userLon, s.lat, s.lon));
     list = list.filter(s => s.dist >= cfg.min && s.dist <= cfg.max);
     list = list.filter(s => !badReports.includes(s.id) && !recentPicks.includes(s.id));
 
-    // マイルドな世界観フィルタ
     if (horror) {
       list = list.filter(s => {
-        if (s.source === 'nichibunken') return true; // 日文研データは怪異100%なので無条件パス
+        if (s.source === 'nichibunken') return true;
         const name = s.tags?.name || '';
         return HORROR_KEYWORDS.test(name) || 
                s.tags?.amenity === 'grave_yard' || 
-               s.tags?.barrier !== undefined || // 結界要素
+               s.tags?.barrier !== undefined || 
                s.tags?.highway === 'dead_end' ||
-               Math.random() > 0.5;
+               Math.random() > 0.4;
       });
     } else if (emotion) {
       list = list.filter(s => {
-        if (s.source === 'nichibunken') return false; // 詩情モードではおどろおどろしいものは弾く
+        if (s.source === 'nichibunken') return false;
         const name = s.tags?.name || '';
         return EMOTION_KEYWORDS.test(name) || 
-               s.tags?.tunnel === 'culvert' || // 暗渠
-               s.tags?.amenity === 'bench' || // ベンチ
-               s.tags?.tourism === 'viewpoint' || // 高台
-               Math.random() > 0.3;
+               s.tags?.tunnel === 'culvert' || 
+               s.tags?.amenity === 'bench' || 
+               s.tags?.tourism === 'viewpoint' || 
+               Math.random() > 0.2;
       });
     }
 
     if (!list.length) { 
-      showError(`指定の領域に幽路が交わりません。モードを切り替えるか、少し移動して再試行してください。`); 
-      setBtnState(false, 'どこか連れてって'); 
+      showError(`因果が結べませんでした。探査律（Mode）を変更するか、別の領域へ移動して再試行してください。`); 
+      setBtnState(false, '針を穿つ'); 
       return; 
     }
 
-    // 距離が近めのものを程よく選定
     list.sort((a,b) => a.dist - b.dist);
-    chosenSpot = list[Math.floor(Math.random() * Math.min(list.length, 6))];
+    chosenSpot = list[Math.floor(Math.random() * Math.min(list.length, 7))];
     
     spotLat = chosenSpot.lat; spotLon = chosenSpot.lon;
-    recentPicks.push(chosenSpot.id); if (recentPicks.length > 20) recentPicks.shift();
+    recentPicks.push(chosenSpot.id); if (recentPicks.length > 25) recentPicks.shift();
 
     if (destMarker) map.removeLayer(destMarker);
     destMarker = L.marker([spotLat, spotLon], { icon: destIcon }).addTo(map);
@@ -405,18 +419,18 @@ async function startJourney() {
     const rRes = await fetch(`${OSRM}/${OSRM_PROFILE[mode]}/${userLon},${userLat};${spotLon},${spotLat}?overview=full&geometries=geojson`);
     const rData = await rRes.json();
     if (rData.routes?.length) {
-      routeLayer = L.geoJSON(rData.routes[0].geometry, { style: { color: '#d4af6a', weight: 2.5, dashArray: '6,6', opacity: 0.8 } }).addTo(map);
-      map.fitBounds(routeLayer.getBounds(), { padding: [60, 60] });
+      routeLayer = L.geoJSON(rData.routes[0].geometry, { style: { color: '#cfa861', weight: 2, dashArray: '4,4', opacity: 0.7 } }).addTo(map);
+      map.fitBounds(routeLayer.getBounds(), { padding: [80, 80] });
     }
 
     const det = getDetails(chosenSpot);
     document.getElementById('debug-name').textContent = det.name;
-    document.getElementById('debug-meta').textContent = `${det.cat} / 直線 ${chosenSpot.dist}m (${mode === 'foot' ? '徒歩' : mode === 'bike' ? '自転車' : '車'})`;
+    document.getElementById('debug-meta').textContent = `${det.cat} / 距離 ${chosenSpot.dist}m / 探査モード: ${mode.toUpperCase()}`;
     document.getElementById('debug-gmap').href = `https://maps.google.com/?q=${spotLat},${spotLon}`;
     document.getElementById('debug-panel').style.display = 'block';
 
     checkArrival(userLat, userLon);
-    setBtnState(false, '別の場所へ');
+    setBtnState(false, '針を打ち直す');
 
     if (watchId) navigator.geolocation.clearWatch(watchId);
     watchId = navigator.geolocation.watchPosition(p => {
@@ -424,30 +438,30 @@ async function startJourney() {
     }, null, { enableHighAccuracy: true });
 
   } catch (err) {
-    showError('位置情報または霊脈の特定に失敗しました。');
-    setBtnState(false, 'どこか連れてって');
+    showError('地脈の同期、あるいは現在地の特定に失敗しました。');
+    setBtnState(false, '針を穿つ');
   }
 }
 
 function resetUI() {
   const modal = document.getElementById('reveal-modal');
   modal.classList.remove('show');
-  setTimeout(() => modal.style.display = 'none', 500);
+  setTimeout(() => modal.style.display = 'none', 600);
   
   if (destMarker) { map.removeLayer(destMarker); destMarker = null; }
   if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
   document.getElementById('dist-badge').classList.remove('show');
   document.getElementById('debug-panel').style.display = 'none';
-  setBtnState(false, 'どこか連れてって');
+  setBtnState(false, '針を穿つ');
 }
 
 document.getElementById('go-btn').addEventListener('click', startJourney);
 document.getElementById('reveal-again').addEventListener('click', resetUI);
 document.getElementById('reveal-bad').addEventListener('click', () => { if (chosenSpot) badReports.push(chosenSpot.id); resetUI(); });
 
-document.querySelectorAll('.mode-btn[data-mode]').forEach(b => {
+document.querySelectorAll('.mode-btn').forEach(b => {
   b.addEventListener('click', () => {
-    document.querySelectorAll('.mode-btn[data-mode]').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
     b.classList.add('active'); mode = b.dataset.mode;
   });
 });
@@ -462,12 +476,12 @@ function updateFilters() {
 
 window.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('particles');
-  for (let i = 0; i < 15; i++) {
+  for (let i = 0; i < 20; i++) {
     const p = document.createElement('div');
     p.className = 'particle';
     p.style.left = Math.random() * 100 + 'vw';
-    p.style.animationDuration = (12 + Math.random() * 10) + 's';
-    p.style.animationDelay = (-Math.random() * 20) + 's';
+    p.style.animationDuration = (14 + Math.random() * 12) + 's';
+    p.style.animationDelay = (-Math.random() * 25) + 's';
     container.appendChild(p);
   }
 });
