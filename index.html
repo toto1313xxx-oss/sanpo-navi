@@ -909,20 +909,15 @@ async function drawNavigation() {
   }
   document.getElementById('nav-loading').classList.remove('show');
 
-  // デバッグパネル
-  const debugPanel = document.getElementById('debug-panel');
-  if (debugMode) {
-    const story = getStory(chosenSpot);
-    const t = chosenSpot.tags || {};
-    const realName = t.name || t['name:ja'] || '（名前なし）';
-    document.getElementById('debug-name').textContent = `${story.name}：${realName}`;
-    document.getElementById('debug-meta').textContent =
-      `${story.sub || ''} / ${chosenSpot.dist}m / ${classify(chosenSpot).toUpperCase()}`;
-    document.getElementById('debug-gmap').href = `https://maps.google.com/?q=${spotLat},${spotLon}`;
-    debugPanel.style.display = 'block';
-  } else {
-    debugPanel.style.display = 'none';
-  }
+  // デバッグパネル（常時表示）
+  const story = getStory(chosenSpot);
+  const t = chosenSpot.tags || {};
+  const realName = t.name || t['name:ja'] || '（名前なし）';
+  document.getElementById('debug-name').textContent = `${story.name}：${realName}`;
+  document.getElementById('debug-meta').textContent =
+    `${story.sub || ''} / ${chosenSpot.dist}m / ${classify(chosenSpot).toUpperCase()}`;
+  document.getElementById('debug-gmap').href = `https://maps.google.com/?q=${spotLat},${spotLon}`;
+  document.getElementById('debug-panel').style.display = 'block';
 
   updateDistance(userLat, userLon);
 
@@ -1158,20 +1153,6 @@ document.querySelectorAll('.mode-btn[data-cat]').forEach(b => {
 });
 
 document.getElementById('start-btn').addEventListener('click', startJourney);
-
-// デバッグトグル
-const debugToggle = document.getElementById('debug-toggle');
-function updateDebugBtn() {
-  debugToggle.textContent = `占術を覗き見る：${debugMode ? 'ON' : 'OFF'}`;
-  debugToggle.style.color = debugMode ? 'var(--vermilion)' : 'var(--ink-mid)';
-  debugToggle.style.borderColor = debugMode ? 'var(--vermilion)' : 'var(--ink-mid)';
-}
-updateDebugBtn();
-debugToggle.addEventListener('click', () => {
-  debugMode = !debugMode;
-  localStorage.setItem('debugMode', debugMode);
-  updateDebugBtn();
-});
 
 function showError(msg) {
   const e = document.getElementById('title-error');
