@@ -583,9 +583,9 @@ const STORIES = {
   haisen: { name:'廃 線 跡', sub:'鉄路の記憶',
     text:'かつて鉄の塊が、\nここを{em}往復していた{/em}。\n\n今は草に覆われ、\n家々の隙間に、\n痕跡だけが残る。',
     facts:['交通跡','時間の化石'] },
-  tomason: { name:'ト マ ソ ン', sub:'超芸術・建築のバグ',
-    text:'上る先のない屋外階段。\n開かない高所の扉。\n\n{em}意味を失った{/em}存在が、\n意味を超えて、\nそこに在り続けている。',
-    facts:['超芸術','無目的','建築のバグ'] },
+  tomason: { name:'都 市 の 隙 間', sub:'用途不明の境界',
+    text:'通り抜けられない壁。\n誰のためでもない\n行き止まりの道。\n\n用途を失ったまま、\n{em}そこに在り続ける{/em}\n都市の余白。\n\n意味を超えた\n小さな違和感が、\n足を止めさせる。',
+    facts:['境界','用途不明','都市の余白'] },
   kekkai: { name:'路 傍 の 結 界', sub:'境界石・境目',
     text:'不自然に据え置かれた石。\nそれ以上先へ進むことを、\n何かが拒んでいる。\n\nあるいは、{em}内なる何か{/em}を\n現世に出さぬための、\n名もなき古い線。',
     facts:['境界','古い祈り'] },
@@ -743,6 +743,9 @@ function classify(s) {
   const t = s.tags || {};
   const name = (s.name || t.name || '');
 
+  // Wikidata由来は怪異強化分なので無条件で怪異
+  if (s.source === 'wikidata') return 'horror';
+
   // 怪異
   if (t.historic === 'tomb' || t.landuse === 'cemetery' || t.amenity === 'grave_yard') return 'horror';
   if (t.man_made === 'mine_shaft' || t.man_made === 'adit') return 'horror';
@@ -759,6 +762,7 @@ function classify(s) {
 
   // 詩情
   if (t.waterway === 'waterfall' || t.natural === 'spring') return 'emotion';
+  if (t.waterway === 'canal' || t.waterway === 'stream') return 'emotion';
   if (t.natural === 'tree') return 'emotion';
   if (t.tourism === 'viewpoint') return 'emotion';
   if (t.historic === 'castle' || t.historic === 'monument' || t.historic === 'memorial') return 'emotion';
@@ -834,7 +838,8 @@ async function fetchOSM(lat, lon, r) {
   nw["natural"="tree"]["heritage"](around:${r},${lat},${lon});
   nw["natural"="tree"]["denotation"](around:${r},${lat},${lon});
   nw["natural"="tree"]["circumference"](around:${r},${lat},${lon});
-  nw["waterway"~"waterfall|canal|stream"](around:${r},${lat},${lon});
+  nw["waterway"~"waterfall"](around:${r},${lat},${lon});
+  nw["waterway"~"canal|stream"]["name"](around:${r},${lat},${lon});
   nw["tunnel"="culvert"](around:${r},${lat},${lon});
   nw["railway"~"abandoned|disused"](around:${r},${lat},${lon});
   nw["abandoned"](around:${r},${lat},${lon});
@@ -870,6 +875,49 @@ out center;`;
     } catch (err) {}
   }
   return [];
+}
+
+// ========= Wikidata（怪異強化用） =========
+async function fetchWikidataHorror(lat, lon, r) {
+  const km = Math.min(r / 1000, 30);
+  const sparql = `
+SELECT ?item ?itemLabel ?coord ?desc WHERE {
+  SERVICE wikibase:around {
+    ?item wdt:P625 ?coord .
+    bd:serviceParam wikibase:center "Point(${lon} ${lat})"^^geo:wktLiteral .
+    bd:serviceParam wikibase:radius "${km}" .
+  }
+  OPTIONAL { ?item schema:description ?desc . FILTER(LANG(?desc) = "ja") }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "ja,en". }
+}
+LIMIT 80`;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    const url = 'https://query.wikidata.org/sparql?format=json&query=' + encodeURIComponent(sparql);
+    const res = await fetch(url, {
+      headers: { 'Accept': 'application/sparql-results+json' },
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    const data = await res.json();
+    return (data.results?.bindings || []).map(b => {
+      const m = b.coord.value.match(/Point\(([-\d.]+) ([-\d.]+)\)/);
+      if (!m) return null;
+      const name = b.itemLabel?.value || '';
+      const desc = b.desc?.value || '';
+      const text = name + ' ' + desc;
+      if (!/古墳|塚|霊|怪|妖|幽|怨|呪|血|処刑|刑場|事件|惨|心霊|怪談|供養|無縁|墓|首塚|祟|魔|刑死|断頭|斬|戦死/.test(text)) return null;
+      if (/小学校|中学校|高等学校|大学|専門学校|高校$|駅$|郵便局|警察署|消防署|病院|銀行|役所/.test(name)) return null;
+      return {
+        lat: parseFloat(m[2]), lon: parseFloat(m[1]),
+        tags: { name },
+        source: 'wikidata',
+        name, desc,
+        id: 'wd-' + b.item.value,
+      };
+    }).filter(Boolean);
+  } catch (e) { return []; }
 }
 
 function isExcluded(s) {
@@ -918,9 +966,18 @@ async function startJourney() {
     lastUserPos = { lat:userLat, lon:userLon };
 
     const cfg = DIST_CONFIG[mode];
-    const osmList = await fetchOSM(userLat, userLon, cfg.max);
 
-    let list = osmList
+    let osmList, wdList = [];
+    if (category === 'horror') {
+      [osmList, wdList] = await Promise.all([
+        fetchOSM(userLat, userLon, cfg.max),
+        fetchWikidataHorror(userLat, userLon, cfg.max)
+      ]);
+    } else {
+      osmList = await fetchOSM(userLat, userLon, cfg.max);
+    }
+
+    let list = [...osmList, ...wdList]
       .map(s => ({ ...s, dist: haversine(userLat, userLon, s.lat, s.lon) }))
       .filter(s => s.dist >= cfg.min && s.dist <= cfg.max)
       .filter(s => !badReports.includes(s.id))
