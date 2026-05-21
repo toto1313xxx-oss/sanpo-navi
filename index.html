@@ -379,10 +379,20 @@ body::before{
     <button class="start" id="start-btn">出 発</button>
     <div class="error-msg" id="title-error"></div>
 
-    <label style="display:flex;align-items:center;gap:8px;margin-top:20px;font-size:11px;color:var(--ink-mid);letter-spacing:0.15em;cursor:pointer;justify-content:center;">
-      <input type="checkbox" id="debug-toggle" style="width:14px;height:14px;accent-color:var(--vermilion);">
-      <span>占術を覗き見る（開発）</span>
-    </label>
+    <button id="debug-toggle" style="
+      width:100%;
+      margin-top:20px;
+      padding:10px 0;
+      background:transparent;
+      border:1px dashed var(--ink-mid);
+      color:var(--ink-mid);
+      font-family:inherit;
+      font-size:12px;
+      letter-spacing:0.2em;
+      cursor:pointer;
+      border-radius:2px;
+      -webkit-appearance:none;
+    ">占術を覗き見る：OFF</button>
   </div>
 </div>
 
